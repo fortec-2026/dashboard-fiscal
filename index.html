@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Controle fiscal 2026</title>
+<title>Controle fiscal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
@@ -168,6 +168,18 @@ th:last-child,td:last-child{padding-right:14px}
 .vazio .btn{margin-top:12px}
 .print-head{display:none}
 
+/* ── Tela de senha ────────────────────────────────────────── */
+.trava{min-height:100vh;display:grid;place-items:center;padding:24px}
+.trava-card{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--ok);border-radius:6px;padding:28px 28px 26px;width:100%;max-width:360px;display:grid;gap:10px}
+.trava-card h1{font-family:var(--cond);font-weight:600;font-size:24px;letter-spacing:-.2px}
+.trava-card p{color:var(--muted);font-size:13px;margin-bottom:6px}
+.trava-card p.erro{color:var(--pend);font-weight:500}
+.trava-card label{font-size:13px;font-weight:500}
+.trava-card .busca{width:100%;padding:9px 11px;font-size:15px}
+.trava-check{display:flex;align-items:center;gap:8px;font-weight:400!important;color:var(--muted)}
+.trava-btn{background:var(--ink);color:var(--surface);border-radius:6px;padding:10px;font-weight:600;margin-top:6px}
+.trava-btn:disabled{opacity:.6;cursor:default}
+
 @media (max-width:1000px){
   .layout{grid-template-columns:1fr}
   .people{position:static;max-height:300px}
@@ -211,7 +223,19 @@ th:last-child,td:last-child{padding-right:14px}
 </head>
 <body>
 
-<header class="top">
+<div class="trava" id="trava">
+  <form class="trava-card" id="trava-form" autocomplete="on">
+    <h1>Controle fiscal</h1>
+    <p id="trava-msg">Digite a senha do escritório para abrir o painel.</p>
+    <input type="text" name="username" value="escritorio" autocomplete="username" hidden>
+    <label for="trava-senha">Senha</label>
+    <input class="busca" id="trava-senha" name="password" type="password" autocomplete="current-password" required>
+    <label class="trava-check"><input type="checkbox" id="trava-lembrar" checked> Lembrar neste computador</label>
+    <button class="trava-btn" id="trava-btn" type="submit">Entrar</button>
+  </form>
+</div>
+
+<header class="top" hidden>
   <div class="top-row">
     <div class="brand">Controle fiscal <span id="ano"></span></div>
     <nav class="nav" id="nav" aria-label="Painéis"></nav>
@@ -221,12 +245,13 @@ th:last-child,td:last-child{padding-right:14px}
       </div>
       <button class="btn" data-acao="atualizar">Atualizar agora</button>
       <button class="btn" data-acao="tema" id="btn-tema">Tema escuro</button>
+      <button class="btn" data-acao="sair" title="Esquece a senha neste computador">Sair</button>
     </div>
   </div>
   <div class="months" id="months" role="group" aria-label="Mês de referência"></div>
 </header>
 
-<main>
+<main hidden>
   <div class="head">
     <h1 id="titulo"></h1>
     <p id="subtitulo"></p>
@@ -255,51 +280,8 @@ th:last-child,td:last-child{padding-right:14px}
 <noscript><p style="padding:24px">Este painel precisa de JavaScript ativado no navegador.</p></noscript>
 
 <script>
-/* ════════════════════════════════════════════════════════════════════════
-   CONFIGURAÇÃO — é só aqui que se mexe quando algo mudar nas planilhas.
 
-   planilha: o código que aparece no link "Publicar na web" (começa com 2PACX).
-   abas:     o número "gid" de cada mês, tirado do mesmo link.
-   Para um ano novo, troque "ano", os códigos das planilhas e os gids.
-   ════════════════════════════════════════════════════════════════════════ */
-var CONFIG = {
-  ano: 2026,
-  minutosEntreAtualizacoes: 5,
-
-  regimes: {
-    lr: {
-      nome: 'Lucro Real',
-      planilha: '2PACX-1vSiDcYY5H7Bw-PhlZvYj3Wxl_6YYk3eKWeiA9jgcz2cbuCWqLi3LzrlBkVi5F4Wxw',
-      abas: { JAN:1411675954, FEV:257777694, MAR:163128472, ABR:1095381911, MAI:647649272, JUN:1925117221,
-              JUL:447012879, AGO:591728330, SET:778976638, OUT:1478779272, NOV:2105514683, DEZ:1242785702 }
-    },
-    lp: {
-      nome: 'Lucro Presumido',
-      planilha: '2PACX-1vTQ-sONZORu0QqXNYrfsomx6lJj3zyyhkXCe7kkgbkzPUi9Nu21PGY5It2j-nIa1A',
-      abas: { JAN:1036180445, FEV:1743022313, MAR:691021727, ABR:2119708459, MAI:1756656721, JUN:1453304696,
-              JUL:156841429, AGO:1759971988, SET:1655089125, OUT:1961797726, NOV:1127237340, DEZ:1575058512 },
-      // posição da coluna do responsável (0 = primeira coluna); mudou a partir de abril
-      colunaResponsavel: { padrao: 13, JAN: 10, FEV: 10, MAR: 10 }
-    },
-    sn: {
-      nome: 'Simples Nacional',
-      planilha: '2PACX-1vTjuwC_XKWMItdrmj8IqLYCeXXE0v4NNcuxn0pomm1ozs47fPFNuXYi-DhLtSqoQw',
-      abas: { MAI:335983892, JUN:2018123078, JUL:1331212862, AGO:1632616469,
-              SET:1749810833, OUT:1947193420, NOV:1312798808, DEZ:783338185 }
-    }
-  },
-
-  // Equipes mostradas no painel de Lucro Real (líder primeiro, depois liderados)
-  equipes: [
-    { nome: 'Gerência',       lider: 'CASSIANO', liderados: [] },
-    { nome: 'Equipe Renan',   lider: 'RENAN',    liderados: ['GABRIELA', 'RAPHAELA'] },
-    { nome: 'Equipe Katrine', lider: 'KATRINE',  liderados: ['ANA LUIZA', 'FULVIA'] },
-    { nome: 'Equipe Camila',  lider: 'CAMILA',   liderados: ['MAILON', 'SANDI', 'THOMAZ'] }
-  ]
-};
-/* ══════════════════════════ fim da configuração ══════════════════════════ */
-
-(function () {
+function iniciarPainel(CONFIG) {
 'use strict';
 
 var MESES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
@@ -894,6 +876,10 @@ document.addEventListener('click', function(ev){
     state.sel = null; state.status = 'todos'; state.flags = {}; state.busca = ''; $('busca').value = '';
     render();
   }
+  else if (d.acao === 'sair') {
+    try { localStorage.removeItem('controle-fiscal-chave'); } catch (e) {}
+    location.reload();
+  }
   else if (d.acao === 'tema') {
     var novo = temaAtual() === 'dark' ? 'light' : 'dark';
     aplicarTema(novo);
@@ -927,6 +913,71 @@ lerHash();
 render();
 carregarMes(state.mes, false);
 
+}
+
+// ── Senha ─────────────────────────────────────────────────────────────────
+// Os links das planilhas ficam cifrados (AES-GCM) aqui dentro e só abrem com a senha.
+(function () {
+  'use strict';
+  var CIFRA = {"voltas":600000,"sal":"bzYKTkhBdsudcJ7DszZ3WA==","iv":"EAc7UimMR4yML825","dados":"nZiCW88IUFsTKTZazkOQcrItc8YR0YmQf//QLNLoLJQURiO00lIjJRnnoY0e1EwrGcpaKr6xslJwU28gPQB+RQ7hyd7rCCmX8TF5vbFYXBxJRnSsin6ceiyGrmGEYGLzQmTVqhwgFmGtVIDjqsz7oxcRfuNHpxqD74EcBd3rIF6MgeWVXLsSXR3ARsQoEAbSIMtudT8PdJ4qY8NOfjlodkLKH5m36j5rFsLgMNLXDEGRMlAN8rex7xEL8aaLpPUCqw2VfPOm1PkKxcNFZHc8e3+LMdxBFd3vVZG60p2J12YlRlCiTHZJYIo61rzP/YBM/vaPpHXoATIiG7fWn/sz4Dlz03ecPLDmkQEGySJcojilBCwmIrzB+/SMyIk2nsK/tDYa/3tUyw5LDEUFsN2yuTXPSZGMzJp6lFWDBdkYX/cTByOduGZW58XKZFA4pSvGSsUftrK+XPH8eBjOTj7SYIbVLg+jBZzv0RbUY+CJj6wyzcCPhn3WpmxxyfWDUx20T+EAiioYd+DALMyv2nvbGuoVaGEMmcc5AHPOj9xw/Ie9vApUdutbifr2PexvU4SG1dMq/aS80cG29i13dt9CAtrVRWe3RD5EbOPLOtqDL7UmVh6K8LGPYzIu1pBmN57s5MevaSlQyiuIQx3ttwWMl/6YfMpSdCkvFB6C7tksGi9Rn8nQUs4szPC6yxp74Hyt+rpho+8tAZbgnYhXCpgHeXzsACJnz6XCfc7zdq3hpAhHmL+iLAjv45DcyRvfjRfQSSWiFbPI3LIpTrZWjfc0aK9J4wNFjPydq+UhmjOks2/n3NkPGYtg/Orb9qcW2GmkuDVkaMmbET9GF06ugZltRxQsn9JPp0nnRICyiVAbOCnNzbv+9OebaXgc0delJlXy1AuERQNeohSDbOUbOAjJLa9q2V3qrlltA0K4pZJk74lhsRB8eM4Wg9q++JE6RK751f3kNZ2MWf/cPKhZbidaLERTspCkyKvaO9YqrRwAFYmhPghSM4hTuw2Ob1ulK8zFd5DcG1nbZQbxTt4DdWam8F8lOdFnr2VE4LpDWrmnRVI9nUuufNbuKTnyWXsqWHcG23ZwO0I2jGbhkj+14Wk2wytCt1e/vc/QCjpqNcsbJqbJf94a0cHzT2SOYjii8L+1/BytdHU0dY36ZmYbEJYBrymiRGH6kzdporlgjstR6Ek/R3CqFg8wE5Xu6VWVt3YJqBSiO1CbXaHpFFPhrWy4D5NrKDh4hJZnOqePs1GAp0Uvfbk/ip2nsum7w+OLd0jNFYvAGhkkG2iwqIOD54rT3K+EWDDQiqk/zFD99uvdVV1RyWwhwQxjDUe7fDgCp5PGIOIhvY/0O3i+ezMLxD5HG6VUn5nhUcu108BBXQkNh+UOVA0uvjQitb8WkAFhkLwjrmeFjj7cY7ZoSd4gJ2IrJFf7oa6U8MZAPyzlNJQQKOsnbGU3k9aPgbOiug/NVDeIHgq35lADF3HzGm3iOx6Do3iUN4hm6u6eOa+a+MUuCOALakjg033KN1yVN8C92mvKyM8GVp/S90/p+ALIdWRsdjZGG7AnE3W5NCtFD7Y1OwXaO0CB6BSJAkqRJqK/3PX7QKi4YkFQL7/D0RGNNuOkEKwk+AKExv/lrtNG/xRzAgw1ocVhrvHTOfV5OW/T0ByfpcFALTo+dbu7eJYY8MmgNlQ8gqNjQDMoMRLxiFDOafJlYvIMUbpgONN2SSiGWgi/xfL1mSX04o4FtQUAQ6c+eJoHSboN3TAFoRubv/tMGpBBD9ng0eoFywfftBiHV3oWbw=="};
+  var GUARDA = 'controle-fiscal-chave';
+  var caixa = document.getElementById('trava'), form = document.getElementById('trava-form');
+  var msg = document.getElementById('trava-msg'), campo = document.getElementById('trava-senha');
+  var botao = document.getElementById('trava-btn');
+
+  function deB64(t){ var b = atob(t), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+  function paraB64(u){ var t = ''; for (var i = 0; i < u.length; i++) t += String.fromCharCode(u[i]); return btoa(t); }
+  function avisar(texto, erro){ msg.textContent = texto; msg.className = erro ? 'erro' : ''; }
+  function bloquear(texto){ avisar(texto, true); campo.disabled = botao.disabled = true; }
+
+  function derivar(senha){
+    return crypto.subtle.importKey('raw', new TextEncoder().encode(senha), 'PBKDF2', false, ['deriveBits'])
+      .then(function(k){ return crypto.subtle.deriveBits({ name:'PBKDF2', salt:deB64(CIFRA.sal), iterations:CIFRA.voltas, hash:'SHA-256' }, k, 256); })
+      .then(function(bits){ return new Uint8Array(bits); });
+  }
+  function decifrar(chave){
+    return crypto.subtle.importKey('raw', chave, 'AES-GCM', false, ['decrypt'])
+      .then(function(k){ return crypto.subtle.decrypt({ name:'AES-GCM', iv:deB64(CIFRA.iv) }, k, deB64(CIFRA.dados)); })
+      .then(function(claro){ return JSON.parse(new TextDecoder().decode(claro)); });
+  }
+  function liberar(cfg){
+    caixa.hidden = true;
+    document.querySelector('.top').hidden = false;
+    document.querySelector('main').hidden = false;
+    iniciarPainel(cfg);
+  }
+
+  if (!CIFRA) return bloquear('Este arquivo ainda não foi gerado com senha. Use o gerador para criar o index.html.');
+  if (!window.crypto || !crypto.subtle) return bloquear('Este navegador não consegue abrir o painel. Acesse pelo endereço https do site, em um navegador atualizado.');
+
+  var salva = null;
+  try { salva = localStorage.getItem(GUARDA); } catch (e) {}
+  if (salva) {
+    caixa.hidden = true;
+    decifrar(deB64(salva)).then(liberar, function(){
+      try { localStorage.removeItem(GUARDA); } catch (e) {}
+      caixa.hidden = false;
+      avisar('A senha do painel mudou. Digite a nova senha.');
+      campo.focus();
+    });
+  } else campo.focus();
+
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    if (botao.disabled) return;
+    botao.disabled = true; botao.textContent = 'Conferindo';
+    var chave;
+    derivar(campo.value)
+      .then(function(c){ chave = c; return decifrar(c); })
+      .then(function(cfg){
+        if (document.getElementById('trava-lembrar').checked) { try { localStorage.setItem(GUARDA, paraB64(chave)); } catch (e) {} }
+        liberar(cfg);
+      }, function(){
+        botao.disabled = false; botao.textContent = 'Entrar';
+        avisar('Senha incorreta. Confira e tente de novo.', true);
+        campo.select();
+      });
+  });
 })();
 </script>
 </body>
