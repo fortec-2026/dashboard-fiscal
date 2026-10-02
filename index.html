@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controle fiscal 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+
+:root{
+  --bg:#f2f5f1; --surface:#ffffff; --ink:#17212b; --muted:#5b6973;
+  --line:#dde4dd; --line-strong:#c3cec5; --stripe:#eef6ef; --track:#e3e9e3;
+  --ok:#1c7a4b; --ok-bg:#dff1e6; --parc:#b97a0c; --parc-bg:#fbefd3;
+  --pend:#b8402c; --pend-bg:#fbe6e1; --na:#8a959d; --na-bg:#eceff0;
+  --lr:#6a59d1; --lp:#cf5f17; --sn:#1280bf;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --cond:'IBM Plex Sans Condensed','IBM Plex Sans','Arial Narrow',Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1519; --surface:#172027; --ink:#e7ece8; --muted:#92a0a8;
+    --line:#26323a; --line-strong:#3a4852; --stripe:#1a2a26; --track:#2a363e;
+    --ok:#4fc48c; --ok-bg:#173527; --parc:#e4b343; --parc-bg:#3a2f12;
+    --pend:#f08372; --pend-bg:#3d1f1a; --na:#6f7d86; --na-bg:#222d34;
+    --lr:#9a8cf0; --lp:#f08a45; --sn:#4fb0e8;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1519; --surface:#172027; --ink:#e7ece8; --muted:#92a0a8;
+  --line:#26323a; --line-strong:#3a4852; --stripe:#1a2a26; --track:#2a363e;
+  --ok:#4fc48c; --ok-bg:#173527; --parc:#e4b343; --parc-bg:#3a2f12;
+  --pend:#f08372; --pend-bg:#3d1f1a; --na:#6f7d86; --na-bg:#222d34;
+  --lr:#9a8cf0; --lp:#f08a45; --sn:#4fb0e8;
+}
+
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.num{font-family:var(--cond);font-variant-numeric:tabular-nums}
+
+/* ── Barra superior ───────────────────────────────────────── */
+.top{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-row{display:flex;align-items:center;gap:20px;padding:10px 24px 0;flex-wrap:wrap}
+.brand{font-family:var(--cond);font-weight:600;font-size:18px;letter-spacing:-.1px;white-space:nowrap;padding-bottom:10px}
+.brand span{color:var(--muted);font-weight:500}
+.nav{display:flex;gap:2px;align-self:flex-end;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav button{padding:9px 14px 11px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+.nav button:hover{color:var(--ink)}
+.nav button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--c,var(--ink))}
+.tools{margin-left:auto;display:flex;align-items:center;gap:10px;padding-bottom:10px;flex-wrap:wrap}
+.status{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--na);flex:none}
+.dot.ok{background:var(--ok)}
+.dot.err{background:var(--pend)}
+.dot.load{background:var(--parc);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.btn{border:1px solid var(--line-strong);border-radius:6px;padding:5px 11px;font-size:12px;font-weight:500;background:var(--surface);white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+
+.months{display:flex;gap:2px;padding:6px 24px 8px;overflow-x:auto;border-top:1px solid var(--line);scrollbar-width:thin}
+.months button{font-family:var(--cond);font-weight:500;font-size:13px;padding:4px 12px;border-radius:5px;color:var(--muted);white-space:nowrap}
+.months button:hover{color:var(--ink);background:var(--bg)}
+.months button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.months button.sem-aba{opacity:.45}
+
+/* ── Página ───────────────────────────────────────────────── */
+main{max-width:1560px;margin:0 auto;padding:22px 24px 60px}
+.head{margin-bottom:16px}
+.head h1{font-family:var(--cond);font-weight:600;font-size:28px;line-height:1.15;letter-spacing:-.3px}
+.head p{color:var(--muted);margin-top:3px;font-size:13px}
+
+.avisos{display:grid;gap:6px;margin-bottom:14px}
+.avisos:empty{display:none}
+.aviso{border-left:3px solid var(--parc);background:var(--parc-bg);padding:8px 12px;font-size:13px;border-radius:0 6px 6px 0}
+.aviso.erro{border-left-color:var(--pend);background:var(--pend-bg)}
+
+.regimes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.reg{display:block;text-align:left;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--c);border-radius:6px;padding:12px 16px 14px;width:100%}
+.reg:hover{border-color:var(--c)}
+.reg-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px}
+.reg-name{font-weight:600}
+.reg-n{font-family:var(--cond);font-weight:600;font-size:22px;font-variant-numeric:tabular-nums}
+.reg-sub{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px;margin-top:7px}
+
+.layout{display:grid;grid-template-columns:272px minmax(0,1fr);gap:18px;align-items:start}
+.layout>*{min-width:0}
+
+/* ── Barras segmentadas ───────────────────────────────────── */
+.seg{display:flex;height:8px;border-radius:2px;overflow:hidden;background:var(--track)}
+.seg i{display:block;height:100%}
+.seg .ok{background:var(--ok)}
+.seg .parc{background:var(--parc)}
+.seg .pend{background:transparent}
+.seg .na{background:repeating-linear-gradient(135deg,var(--na) 0 2px,transparent 2px 5px)}
+.seg.grande{height:16px;border-radius:3px}
+
+/* ── Responsáveis ─────────────────────────────────────────── */
+.people{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 0 10px;position:sticky;top:104px;max-height:calc(100vh - 124px);overflow-y:auto}
+.people h2{font-size:13px;font-weight:600;padding:6px 16px 8px}
+.p-group{font-size:12px;color:var(--muted);padding:10px 16px 4px;border-top:1px solid var(--line);margin-top:6px;display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left}
+button.p-group:hover{color:var(--ink)}
+.p-group.on{color:var(--ink);font-weight:600}
+.p-row{display:grid;grid-template-columns:minmax(0,1fr) 34px 40px;column-gap:8px;row-gap:4px;align-items:baseline;width:100%;text-align:left;padding:6px 16px;border-left:3px solid transparent}
+.p-row:hover{background:var(--bg)}
+.p-row.on{border-left-color:var(--ink);background:var(--stripe)}
+.p-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-row.on .p-name{font-weight:600}
+.p-n,.p-pct{font-family:var(--cond);font-variant-numeric:tabular-nums;text-align:right;font-size:13px}
+.p-n{color:var(--muted)}
+.p-bar{grid-column:1/-1}
+.p-bar .seg{height:5px}
+
+/* ── Resumo ───────────────────────────────────────────────── */
+.resumo{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 22px;align-items:center;margin-bottom:12px}
+.r-pct{font-family:var(--cond);font-weight:600;font-size:44px;line-height:1;font-variant-numeric:tabular-nums;grid-row:span 2}
+.r-pct small{display:block;font-family:var(--sans);font-weight:400;font-size:12px;color:var(--muted);margin-top:4px}
+.r-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.r-nota{grid-column:1/-1;color:var(--muted);font-size:12px;margin-top:4px}
+
+.chip{border:1px solid var(--line-strong);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:7px;background:var(--surface);white-space:nowrap}
+.chip:hover{border-color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chip b{font-family:var(--cond);font-weight:600;font-variant-numeric:tabular-nums}
+.chip .sw{width:8px;height:8px;border-radius:2px;flex:none}
+.sw.ok{background:var(--ok)} .sw.pend{background:var(--track);border:1px solid var(--line-strong)} .sw.na{background:var(--na)}
+
+/* ── Tabela ───────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.toolbar{display:flex;align-items:center;gap:8px;padding:12px 14px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.toolbar .conta{font-weight:600;margin-right:auto;white-space:nowrap}
+.busca{border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;padding:6px 11px;width:250px;max-width:100%}
+.busca::placeholder{color:var(--muted)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{font-family:var(--cond);font-weight:600;font-size:12px;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+tbody td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:nth-child(even) td{background:var(--stripe)}
+tbody tr:last-child td{border-bottom:0}
+th.c,td.c{text-align:center}
+.t-cod{font-family:var(--cond);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.t-nome{font-weight:500;min-width:190px}
+th:first-child,td:first-child{padding-left:14px}
+th:last-child,td:last-child{padding-right:14px}
+.t-nome small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.t-sub{color:var(--muted);white-space:nowrap}
+.f-ok{color:var(--ok);font-weight:600;font-size:15px}
+.f-pend{color:var(--line-strong);font-weight:600}
+.f-txt{font-size:11px;color:var(--muted);white-space:nowrap}
+.f-txt.pend{color:var(--parc);font-weight:500}
+.prog{display:flex;align-items:center;gap:6px;min-width:84px}
+.prog .seg{flex:1;height:5px}
+.prog span{font-family:var(--cond);font-weight:600;font-variant-numeric:tabular-nums;width:36px;text-align:right}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.pill.concluido{background:var(--ok-bg);color:var(--ok)}
+.pill.parcial{background:var(--parc-bg);color:var(--parc)}
+.pill.pendente{background:var(--pend-bg);color:var(--pend)}
+.pill.na{background:var(--na-bg);color:var(--muted)}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}
+.tag::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--c)}
+.vazio{padding:46px 20px;text-align:center;color:var(--muted)}
+.vazio strong{display:block;color:var(--ink);font-weight:600;margin-bottom:4px}
+.vazio .btn{margin-top:12px}
+.print-head{display:none}
+
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr}
+  .people{position:static;max-height:300px}
+}
+@media (max-width:700px){
+  .top{position:static}
+  .top-row{padding:8px 14px 0;gap:8px 14px}
+  .nav{order:3;width:100%}
+  .tools{padding-bottom:6px}
+  .status .quando{display:none}
+  .months{padding:6px 14px 8px}
+  main{padding:16px 14px 50px}
+  .head h1{font-size:22px}
+  .regimes{grid-template-columns:1fr}
+  .resumo{grid-template-columns:1fr}
+  .r-pct{grid-row:auto;font-size:36px}
+  .busca{width:100%}
+  .toolbar .conta{width:100%}
+}
+@media (prefers-reduced-motion:reduce){.dot.load{animation:none}}
+
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  :root,:root[data-theme="dark"]{--bg:#fff;--surface:#fff;--ink:#000;--muted:#444;--line:#ccc;--line-strong:#999;--stripe:#f1f6f1;--track:#ddd;--ok:#14633c;--ok-bg:#e2f2e8;--parc:#8a5a00;--parc-bg:#fbefd3;--pend:#a02d1c;--pend-bg:#fbe6e1;--na:#888;--na-bg:#eee}
+  body{font-size:10px}
+  .top,.people,.regimes,.resumo,.toolbar,.avisos,.head{display:none!important}
+  main{padding:0;max-width:none}
+  .layout{display:block}
+  .card{border:0}
+  .print-head{display:block;margin-bottom:8px}
+  .print-head h1{font-family:var(--cond);font-size:15px}
+  .print-head p{color:#444;font-size:10px}
+  table{font-size:9.5px}
+  thead th,tbody td{padding:3px 6px}
+  thead{display:table-header-group}
+  tr{break-inside:avoid}
+  .tbl-wrap{overflow:visible}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand">Controle fiscal <span id="ano"></span></div>
+    <nav class="nav" id="nav" aria-label="Painéis"></nav>
+    <div class="tools">
+      <div class="status" id="status" title="A página busca as planilhas sozinha a cada 5 minutos">
+        <span class="dot" id="dot"></span><span id="status-txt">Conectando</span>
+      </div>
+      <button class="btn" data-acao="atualizar">Atualizar agora</button>
+      <button class="btn" data-acao="tema" id="btn-tema">Tema escuro</button>
+    </div>
+  </div>
+  <div class="months" id="months" role="group" aria-label="Mês de referência"></div>
+</header>
+
+<main>
+  <div class="head">
+    <h1 id="titulo"></h1>
+    <p id="subtitulo"></p>
+  </div>
+  <div class="avisos" id="avisos"></div>
+  <div class="regimes" id="regimes" hidden></div>
+
+  <div class="layout">
+    <aside class="people" id="people" aria-label="Responsáveis"></aside>
+    <div>
+      <section class="resumo" id="resumo" aria-label="Resumo"></section>
+      <section class="card">
+        <div class="toolbar">
+          <span class="conta" id="conta"></span>
+          <span id="flags" style="display:contents"></span>
+          <input class="busca" id="busca" type="search" placeholder="Buscar empresa, código ou responsável" aria-label="Buscar">
+          <button class="btn" data-acao="imprimir">Imprimir lista</button>
+        </div>
+        <div class="print-head"><h1 id="p-titulo"></h1><p id="p-sub"></p></div>
+        <div class="tbl-wrap" id="tabela"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<noscript><p style="padding:24px">Este painel precisa de JavaScript ativado no navegador.</p></noscript>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   CONFIGURAÇÃO — é só aqui que se mexe quando algo mudar nas planilhas.
+
+   planilha: o código que aparece no link "Publicar na web" (começa com 2PACX).
+   abas:     o número "gid" de cada mês, tirado do mesmo link.
+   Para um ano novo, troque "ano", os códigos das planilhas e os gids.
+   ════════════════════════════════════════════════════════════════════════ */
+var CONFIG = {
+  ano: 2026,
+  minutosEntreAtualizacoes: 5,
+
+  regimes: {
+    lr: {
+      nome: 'Lucro Real',
+      planilha: '2PACX-1vSiDcYY5H7Bw-PhlZvYj3Wxl_6YYk3eKWeiA9jgcz2cbuCWqLi3LzrlBkVi5F4Wxw',
+      abas: { JAN:1411675954, FEV:257777694, MAR:163128472, ABR:1095381911, MAI:647649272, JUN:1925117221,
+              JUL:447012879, AGO:591728330, SET:778976638, OUT:1478779272, NOV:2105514683, DEZ:1242785702 }
+    },
+    lp: {
+      nome: 'Lucro Presumido',
+      planilha: '2PACX-1vTQ-sONZORu0QqXNYrfsomx6lJj3zyyhkXCe7kkgbkzPUi9Nu21PGY5It2j-nIa1A',
+      abas: { JAN:1036180445, FEV:1743022313, MAR:691021727, ABR:2119708459, MAI:1756656721, JUN:1453304696,
+              JUL:156841429, AGO:1759971988, SET:1655089125, OUT:1961797726, NOV:1127237340, DEZ:1575058512 },
+      // posição da coluna do responsável (0 = primeira coluna); mudou a partir de abril
+      colunaResponsavel: { padrao: 13, JAN: 10, FEV: 10, MAR: 10 }
+    },
+    sn: {
+      nome: 'Simples Nacional',
+      planilha: '2PACX-1vTjuwC_XKWMItdrmj8IqLYCeXXE0v4NNcuxn0pomm1ozs47fPFNuXYi-DhLtSqoQw',
+      abas: { MAI:335983892, JUN:2018123078, JUL:1331212862, AGO:1632616469,
+              SET:1749810833, OUT:1947193420, NOV:1312798808, DEZ:783338185 }
+    }
+  },
+
+  // Equipes mostradas no painel de Lucro Real (líder primeiro, depois liderados)
+  equipes: [
+    { nome: 'Gerência',       lider: 'CASSIANO', liderados: [] },
+    { nome: 'Equipe Renan',   lider: 'RENAN',    liderados: ['GABRIELA', 'RAPHAELA'] },
+    { nome: 'Equipe Katrine', lider: 'KATRINE',  liderados: ['ANA LUIZA', 'FULVIA'] },
+    { nome: 'Equipe Camila',  lider: 'CAMILA',   liderados: ['MAILON', 'SANDI', 'THOMAZ'] }
+  ]
+};
+/* ══════════════════════════ fim da configuração ══════════════════════════ */
+
+(function () {
+'use strict';
+
+var MESES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+var MES_CURTO = {JAN:'Jan',FEV:'Fev',MAR:'Mar',ABR:'Abr',MAI:'Mai',JUN:'Jun',JUL:'Jul',AGO:'Ago',SET:'Set',OUT:'Out',NOV:'Nov',DEZ:'Dez'};
+var MES_NOME  = {JAN:'janeiro',FEV:'fevereiro',MAR:'março',ABR:'abril',MAI:'maio',JUN:'junho',JUL:'julho',AGO:'agosto',SET:'setembro',OUT:'outubro',NOV:'novembro',DEZ:'dezembro'};
+var REGIMES = ['lr','lp','sn'];
+var VISOES = { todos:'Visão geral', lr:CONFIG.regimes.lr.nome, lp:CONFIG.regimes.lp.nome, sn:CONFIG.regimes.sn.nome };
+var INTERVALO = CONFIG.minutosEntreAtualizacoes * 60 * 1000;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function cel(l, i){ return (l && i != null && i >= 0 && l[i] != null) ? String(l[i]).trim() : ''; }
+function semAcento(s){ return s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function hora(ts){ return new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function plural(n, um, varios){ return n + ' ' + (n === 1 ? um : varios); }
+function nomePessoa(s){
+  if (s === 'SEM RESP') return 'Sem responsável';
+  return s.toLowerCase().replace(/(^|[\s\-\/.])([a-zà-ÿ])/g, function(m, a, b){ return a + b.toUpperCase(); });
+}
+
+// ── Estado ────────────────────────────────────────────────────────────────
+function mesPadrao(){
+  var i = new Date().getMonth() - 1;   // mês anterior ao atual, que é o que está sendo fechado
+  return MESES[i < 0 ? 11 : i];
+}
+var state = { view:'todos', mes:mesPadrao(), sel:null, status:'todos', flags:{}, busca:'' };
+var cache = {};          // "lr:SET" → { registros, titulo, em, erro, carregando, txt }
+var ultimaBusca = {};    // "SET" → timestamp da última tentativa
+
+// ── Leitura de CSV ────────────────────────────────────────────────────────
+function parseCSV(t){
+  var rows = [], row = [], f = '', q = false, c;
+  if (t.charCodeAt(0) === 0xFEFF) t = t.slice(1);
+  for (var i = 0; i < t.length; i++) {
+    c = t[i];
+    if (q) {
+      if (c === '"') { if (t[i+1] === '"') { f += '"'; i++; } else q = false; }
+      else f += c;
+    }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n') { row.push(f); rows.push(row); row = []; f = ''; }
+    else if (c !== '\r') f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+
+function urlAba(regime, mes){
+  var r = CONFIG.regimes[regime], gid = r.abas[mes];
+  if (gid == null) return null;
+  return 'https://docs.google.com/spreadsheets/d/e/' + r.planilha + '/pub?gid=' + gid + '&single=true&output=csv';
+}
+
+// ── Regras de cada planilha (iguais às dos painéis antigos) ───────────────
+function fechar(reg){
+  var apl = 0, ok = 0;
+  reg.campos.forEach(function(c){ if (c.estado !== 'na') { apl++; if (c.estado === 'ok') ok++; } });
+  reg.pct = apl ? Math.round(ok / apl * 100) : 0;
+  reg.status = !apl ? 'na' : reg.pct === 100 ? 'concluido' : reg.pct > 0 ? 'parcial' : 'pendente';
+  return reg;
+}
+
+var PARSERS = {
+  lr: function(linhas){
+    var SIM = ['TRUE','VERDADEIRO','V','SIM'];
+    var IGN = ['N/A','N.A.','TERCEIRO','I.E. SUSP','I.E. SUSP.'];
+    var cab = linhas[1] || [], idx = {};
+    cab.forEach(function(h, i){ idx[String(h).trim()] = i; });
+    var out = [];
+    for (var r = 2; r < linhas.length; r++) {
+      var l = linhas[r], cod = cel(l, idx['CÓD']), nome = cel(l, idx['RAZÃO SOCIAL']);
+      if (!cod && !nome) continue;
+      var campos = ['EFD ICMS','EFD P/C','ENVIO'].map(function(rot){
+        var v = cel(l, idx[rot]), up = v.toUpperCase();
+        if (v === '' || IGN.indexOf(up) >= 0) return { rot:rot, estado:'na', txt:v };
+        if (SIM.indexOf(up) >= 0) return { rot:rot, estado:'ok', txt:'' };
+        return { rot:rot, estado:'pend', txt:(up === 'FALSE' || up === 'FALSO') ? '' : v };
+      });
+      var envio = cel(l, idx['ENVIO']).toUpperCase();
+      out.push(fechar({
+        regime:'lr', cod:cod, nome:nome,
+        resp:(cel(l, idx['RESP']) || 'SEM RESP').toUpperCase(),
+        cidade:cel(l, idx['CIDADE']), uf:cel(l, idx['UF']),
+        atividade:cel(l, idx['ATIVIDADE']), matFil:cel(l, idx['MAT/FIL']),
+        campos:campos, enviado:campos[2].estado === 'ok', envioDispensado:IGN.indexOf(envio) >= 0
+      }));
+    }
+    return { titulo: cel(linhas[0], 0), registros: out };
+  },
+
+  lp: function(linhas, mes){
+    var SIM = ['TRUE','VERDADEIRO','V','SIM','X'];
+    var IGN = ['N/A','N.A.','TERCEIRO','I.E. SUSP','I.E. SUSP.','NA'];
+    var cfg = CONFIG.regimes.lp.colunaResponsavel;
+    var colResp = cfg[mes] != null ? cfg[mes] : cfg.padrao;
+    var cab = linhas[1] || [], idx = {};
+    cab.forEach(function(h, i){ idx[String(h).trim()] = i; });
+    var iCod = idx['CÓD.'] != null ? idx['CÓD.'] : idx['CÓD'] != null ? idx['CÓD'] : 0;
+    var iNome = idx['RAZÃO SOCIAL'] != null ? idx['RAZÃO SOCIAL'] : 1;
+    var iCid = idx['MUNIC.'] != null ? idx['MUNIC.'] : idx['CIDADE'];
+    var out = [];
+    for (var r = 2; r < linhas.length; r++) {
+      var l = linhas[r], cod = cel(l, iCod), nome = cel(l, iNome);
+      if (!cod && !nome) continue;
+      var campos = ['EFD ICMS/IPI','EFD PIS/COFINS','ENVIO'].map(function(rot){
+        var v = cel(l, idx[rot]), up = v.toUpperCase();
+        if (v === '' || IGN.indexOf(up) >= 0) return { rot:rot, estado:'na', txt:v };
+        if (SIM.indexOf(up) >= 0) return { rot:rot, estado:'ok', txt:'' };
+        return { rot:rot, estado:'pend', txt:(up === 'FALSE' || up === 'FALSO') ? '' : v };
+      });
+      out.push(fechar({
+        regime:'lp', cod:cod, nome:nome,
+        resp:cel(l, colResp).toUpperCase() || 'SEM RESP',
+        cidade:cel(l, iCid), uf:cel(l, idx['UF']), atividade:'', matFil:'',
+        campos:campos, enviado:campos[2].estado === 'ok', envioDispensado:campos[2].estado === 'na'
+      }));
+    }
+    return { titulo: cel(linhas[0], 0), registros: out };
+  },
+
+  sn: function(linhas){
+    var SIM = ['TRUE','VERDADEIRO','V','SIM','X','✔','1'];
+    var lh = -1, i;
+    for (i = 0; i < Math.min(linhas.length, 5); i++) {
+      var junto = linhas[i].join(' ').toUpperCase();
+      if (junto.indexOf('CÓDIGO') >= 0 || junto.indexOf('CODIGO') >= 0 || junto.indexOf('EMPRESA') >= 0) { lh = i; break; }
+    }
+    if (lh < 0) lh = 1;
+    var titulo = '';
+    for (i = 0; i < lh; i++) { if (cel(linhas[i], 0)) { titulo = cel(linhas[i], 0); break; } }
+    var idx = {};
+    (linhas[lh] || []).forEach(function(h, k){ idx[semAcento(String(h).trim())] = k; });
+    function col(nomes){ for (var n = 0; n < nomes.length; n++) { var k = semAcento(nomes[n]); if (idx[k] != null) return idx[k]; } return -1; }
+    var iCod = col(['CÓDIGO','COD.','COD']), iNome = col(['EMPRESA','RAZÃO SOCIAL','NOME']);
+    var iResp = col(['RESPONSÁVEL','RESP']), iEnv = col(['ENVIADO','ENVIO','SENT']);
+    var out = [];
+    for (var r = lh + 1; r < linhas.length; r++) {
+      var l = linhas[r], cod = cel(l, iCod), nome = cel(l, iNome);
+      if (!cod && !nome) continue;
+      var resp = cel(l, iResp).toUpperCase(), env = cel(l, iEnv).toUpperCase();
+      var na = SN_NA.indexOf(env) >= 0 || SN_NA.indexOf(resp) >= 0;
+      var ok = !na && SIM.indexOf(env) >= 0;
+      out.push(fechar({
+        regime:'sn', cod:cod, nome:nome, resp:resp || 'SEM RESP',
+        cidade:'', uf:'', atividade:'', matFil:'',
+        campos:[{ rot:'Enviado', estado: na ? 'na' : ok ? 'ok' : 'pend', txt: na ? (SN_NA.indexOf(env) >= 0 ? env : resp) : '' }],
+        enviado:ok, envioDispensado:na
+      }));
+    }
+    return { titulo: titulo, registros: out };
+  }
+};
+// No Simples, estes valores (na coluna Enviado ou Responsável) tiram a empresa da conta
+var SN_NA = ['DEVOLVIDA','DEVOLVIDO','BAIXADA','BAIXADO','SEM RESP','N/A','N.A.','NA'];
+
+// ── Busca das planilhas ───────────────────────────────────────────────────
+function baixar(regime, mes){
+  var url = urlAba(regime, mes), chave = regime + ':' + mes;
+  if (!url) return Promise.resolve(false);
+  var ent = cache[chave] || (cache[chave] = {});
+  ent.carregando = true;
+  var ctrl = ('AbortController' in window) ? new AbortController() : null;
+  var relogio = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 25000);
+  var mudou = false;
+  return fetch(url, { cache:'no-store', signal: ctrl ? ctrl.signal : undefined })
+    .then(function(r){ if (!r.ok) throw new Error('resposta ' + r.status); return r.text(); })
+    .then(function(txt){
+      if (/^\s*<(!doctype|html)/i.test(txt)) throw new Error('a planilha não está publicada como CSV');
+      mudou = ent.txt !== txt || !!ent.erro;
+      if (ent.txt !== txt) {
+        var res = PARSERS[regime](parseCSV(txt), mes);
+        ent.registros = res.registros; ent.titulo = res.titulo; ent.txt = txt;
+      }
+      ent.em = Date.now(); ent.erro = null;
+    })
+    .catch(function(e){
+      mudou = true;
+      ent.erro = (e && e.name === 'AbortError') ? 'a planilha demorou demais para responder'
+        : (e && e.name === 'TypeError') ? 'sem conexão com o Google Planilhas'
+        : ((e && e.message) || 'falha de conexão');
+    })
+    .then(function(){ clearTimeout(relogio); ent.carregando = false; return mudou; });
+}
+
+function carregarMes(mes, silencioso){
+  ultimaBusca[mes] = Date.now();
+  var pedidos = REGIMES.map(function(g){
+    return baixar(g, mes).then(function(mudou){
+      if (mes !== state.mes) return;
+      if (mudou || !silencioso) render(); else renderStatus();
+    });
+  });
+  renderStatus();
+  return Promise.all(pedidos);
+}
+
+// ── Seleção e contas ──────────────────────────────────────────────────────
+function regimesDaVisao(){ return state.view === 'todos' ? REGIMES : [state.view]; }
+function entrada(g){ return cache[g + ':' + state.mes]; }
+function registrosDaVisao(){
+  var out = [];
+  regimesDaVisao().forEach(function(g){ var e = entrada(g); if (e && e.registros) out = out.concat(e.registros); });
+  return out;
+}
+function equipePorNome(n){ for (var i = 0; i < CONFIG.equipes.length; i++) if (CONFIG.equipes[i].nome === n) return CONFIG.equipes[i]; return null; }
+function membros(eq){ return [eq.lider].concat(eq.liderados); }
+function foraDaLista(r){ return r.regime === 'sn' && SN_NA.indexOf(r.resp) >= 0; }
+
+function porSelecao(rs){
+  var s = state.sel;
+  if (!s) return rs;
+  if (s.tipo === 'pessoa') return rs.filter(function(r){ return r.resp === s.nome; });
+  var eq = equipePorNome(s.nome);
+  if (!eq) return rs;
+  var m = membros(eq);
+  return rs.filter(function(r){ return m.indexOf(r.resp) >= 0; });
+}
+function contar(rs){
+  var c = { total:0, concluido:0, parcial:0, pendente:0, na:0 };
+  rs.forEach(function(r){ c.total++; c[r.status]++; });
+  c.aplic = c.total - c.na;
+  c.abertos = c.parcial + c.pendente;
+  c.pct = c.aplic ? Math.round(c.concluido / c.aplic * 100) : 0;
+  return c;
+}
+function barra(c, classe, base){
+  var t = base || c.total || 1;
+  function s(k, n){ return n ? '<i class="' + k + '" style="width:' + (n / t * 100) + '%"></i>' : ''; }
+  return '<div class="seg' + (classe ? ' ' + classe : '') + '" role="img" aria-label="' +
+    c.concluido + ' concluídos, ' + c.parcial + ' parciais, ' + c.pendente + ' pendentes, ' + c.na + ' não se aplicam">' +
+    s('ok', c.concluido) + s('parc', c.parcial) + s('pend', c.pendente) + s('na', c.na) + '</div>';
+}
+function rotuloSel(){
+  var s = state.sel;
+  if (!s) return 'Todos os responsáveis';
+  if (s.tipo === 'pessoa') return 'Carteira de ' + nomePessoa(s.nome);
+  var eq = equipePorNome(s.nome);
+  return s.nome + (eq ? ', ' + plural(membros(eq).length, 'pessoa', 'pessoas') : '');
+}
+
+// ── Desenho ───────────────────────────────────────────────────────────────
+function renderNav(){
+  $('nav').innerHTML = Object.keys(VISOES).map(function(v){
+    return '<button data-view="' + v + '"' + (v !== 'todos' ? ' style="--c:var(--' + v + ')"' : '') +
+      (state.view === v ? ' aria-current="page"' : '') + '>' + esc(VISOES[v]) + '</button>';
+  }).join('');
+  $('months').innerHTML = MESES.map(function(m){
+    var tem = regimesDaVisao().some(function(g){ return urlAba(g, m); });
+    return '<button data-mes="' + m + '" aria-pressed="' + (state.mes === m) + '"' + (tem ? '' : ' class="sem-aba" title="Sem planilha neste mês"') + '>' + MES_CURTO[m] + '</button>';
+  }).join('');
+  var faixa = $('months'), ativo = faixa.querySelector('[aria-pressed="true"]');
+  if (ativo) faixa.scrollLeft = ativo.offsetLeft - faixa.clientWidth / 2 + ativo.offsetWidth / 2;
+}
+
+function renderCabecalho(){
+  var t = VISOES[state.view] + ', ' + MES_NOME[state.mes] + ' de ' + CONFIG.ano;
+  $('titulo').textContent = t;
+  document.title = t;
+  var sub = rotuloSel();
+  if (state.view !== 'todos') { var e = entrada(state.view); if (e && e.titulo) sub += '. Planilha: ' + e.titulo; }
+  $('subtitulo').textContent = sub;
+}
+
+function renderAvisos(){
+  var h = '';
+  regimesDaVisao().forEach(function(g){
+    var nome = CONFIG.regimes[g].nome, e = entrada(g);
+    if (!urlAba(g, state.mes)) {
+      var tem = MESES.filter(function(m){ return urlAba(g, m); });
+      h += '<div class="aviso">' + esc(nome) + ' não tem planilha de ' + MES_NOME[state.mes] +
+        (tem.length ? '. Os meses disponíveis vão de ' + MES_NOME[tem[0]] + ' a ' + MES_NOME[tem[tem.length - 1]] + '.' : '.') + '</div>';
+    } else if (e && e.erro && e.registros) {
+      h += '<div class="aviso">Não foi possível atualizar ' + esc(nome) + ' agora (' + esc(e.erro) + '). Os dados mostrados são das ' + hora(e.em) + '.</div>';
+    } else if (e && e.erro) {
+      h += '<div class="aviso erro">Não foi possível carregar ' + esc(nome) + ' (' + esc(e.erro) + '). Confira se a aba continua publicada em Arquivo, Compartilhar, Publicar na web, e use "Atualizar agora".</div>';
+    }
+  });
+  $('avisos').innerHTML = h;
+}
+
+function renderRegimes(){
+  var el = $('regimes');
+  if (state.view !== 'todos') { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  var todos = porSelecao(registrosDaVisao()).length || 1;
+  el.innerHTML = REGIMES.map(function(g){
+    var e = entrada(g), rs = e && e.registros ? porSelecao(e.registros) : null;
+    var corpo;
+    if (!urlAba(g, state.mes)) corpo = '<div class="reg-sub"><span>Sem planilha neste mês</span></div>';
+    else if (!rs) corpo = '<div class="reg-sub"><span>' + (e && e.erro ? 'Não carregou' : 'Carregando') + '</span></div>';
+    else {
+      var c = contar(rs);
+      corpo = barra(c) + '<div class="reg-sub"><span>' + c.pct + '% concluído</span><span>' + Math.round(c.total / todos * 100) + '% das empresas</span></div>';
+    }
+    return '<button class="reg" data-view="' + g + '" style="--c:var(--' + g + ')" aria-label="Abrir painel de ' + esc(CONFIG.regimes[g].nome) + '">' +
+      '<div class="reg-top"><span class="reg-name">' + esc(CONFIG.regimes[g].nome) + '</span><span class="reg-n">' + (rs ? rs.length : '–') + '</span></div>' + corpo + '</button>';
+  }).join('');
+}
+
+function renderPessoas(){
+  var rs = registrosDaVisao().filter(function(r){ return !foraDaLista(r); });
+  var mapa = {};
+  rs.forEach(function(r){ (mapa[r.resp] || (mapa[r.resp] = [])).push(r); });
+  if (state.sel && state.sel.tipo === 'pessoa' && !mapa[state.sel.nome]) mapa[state.sel.nome] = [];
+  var nomes = Object.keys(mapa).sort(function(a, b){
+    if (a === 'SEM RESP') return 1; if (b === 'SEM RESP') return -1;
+    return mapa[b].length - mapa[a].length || a.localeCompare(b, 'pt-BR');
+  });
+  var maior = nomes.reduce(function(m, n){ return Math.max(m, mapa[n].length); }, 1);
+
+  function linha(n){
+    var c = contar(mapa[n]);
+    var on = state.sel && state.sel.tipo === 'pessoa' && state.sel.nome === n;
+    return '<button class="p-row' + (on ? ' on' : '') + '" data-pessoa="' + esc(n) + '" aria-pressed="' + !!on + '">' +
+      '<span class="p-name">' + esc(nomePessoa(n)) + '</span><span class="p-n">' + c.total + '</span><span class="p-pct">' + (c.aplic ? c.pct + '%' : '–') + '</span>' +
+      '<span class="p-bar"><span style="display:block;width:' + Math.max(c.total / maior * 100, 4) + '%">' + barra(c) + '</span></span></button>';
+  }
+
+  var geral = contar(registrosDaVisao());
+  var h = '<h2>Responsáveis</h2>' +
+    '<button class="p-row' + (!state.sel ? ' on' : '') + '" data-pessoa="" aria-pressed="' + !state.sel + '">' +
+    '<span class="p-name">Todos</span><span class="p-n">' + geral.total + '</span><span class="p-pct">' + (geral.aplic ? geral.pct + '%' : '–') + '</span></button>';
+
+  if (state.view === 'lr' && CONFIG.equipes.length) {
+    var usados = {};
+    CONFIG.equipes.forEach(function(eq){
+      var ms = membros(eq).filter(function(n){ return mapa[n]; });
+      if (!ms.length) return;
+      ms.forEach(function(n){ usados[n] = 1; });
+      var c = contar(ms.reduce(function(a, n){ return a.concat(mapa[n]); }, []));
+      var on = state.sel && state.sel.tipo === 'equipe' && state.sel.nome === eq.nome;
+      h += '<button class="p-group' + (on ? ' on' : '') + '" data-equipe="' + esc(eq.nome) + '" aria-pressed="' + !!on + '" title="Ver a equipe inteira">' +
+        '<span>' + esc(eq.nome) + '</span><span class="num">' + c.total + ' · ' + (c.aplic ? c.pct + '%' : '–') + '</span></button>';
+      h += ms.map(linha).join('');
+    });
+    var resto = nomes.filter(function(n){ return !usados[n]; });
+    if (resto.length) h += '<div class="p-group"><span>Fora das equipes</span></div>' + resto.map(linha).join('');
+  } else {
+    h += nomes.map(linha).join('');
+  }
+  $('people').innerHTML = h;
+}
+
+function renderResumo(){
+  var rs = porSelecao(registrosDaVisao()), c = contar(rs), sn = state.view === 'sn';
+  function chip(st, txt, n, sw){
+    return '<button class="chip" data-status="' + st + '" aria-pressed="' + (state.status === st) + '">' +
+      (sw ? '<span class="sw ' + sw + '"></span>' : '') + txt + ' <b>' + n + '</b></button>';
+  }
+  var nota = '';
+  if (!sn && c.abertos) {
+    var soma = 0;
+    rs.forEach(function(r){ if (r.status === 'parcial' || r.status === 'pendente') soma += r.pct; });
+    nota = 'As ' + c.abertos + ' pendentes estão, em média, com ' + Math.round(soma / c.abertos) + '% das entregas feitas' +
+      (c.parcial ? ' (' + c.parcial + ' já começadas).' : '.');
+  } else if (c.aplic && !c.abertos) nota = 'Tudo em dia neste mês.';
+
+  $('resumo').innerHTML =
+    '<div class="r-pct">' + (c.aplic ? c.pct + '%' : '–') + '<small>' + (sn ? 'enviado' : 'concluído') + '</small></div>' +
+    '<div>' + barra(c, 'grande') +
+      '<div class="r-chips">' +
+        chip('todos', 'Todas', c.total) +
+        chip('concluido', sn ? 'Enviadas' : 'Concluídas', c.concluido, 'ok') +
+        chip('pendente', 'Pendentes', c.abertos, 'pend') +
+        chip('na', 'Não se aplica', c.na, 'na') +
+      '</div></div>' +
+    (nota ? '<p class="r-nota">' + nota + '</p>' : '');
+}
+
+var FLAGS = {
+  lr: [['enviado','Enviadas à contabilidade'],['naoEnviado','Não enviadas'],['matriz','Matriz'],['filial','Filial']],
+  lp: [['enviado','Envio concluído'],['naoEnviado','Envio pendente']],
+  sn: [], todos: []
+};
+function renderFlags(){
+  $('flags').innerHTML = FLAGS[state.view].map(function(f){
+    return '<button class="chip" data-flag="' + f[0] + '" aria-pressed="' + !!state.flags[f[0]] + '">' + f[1] + '</button>';
+  }).join('');
+}
+
+function filtrados(){
+  var rs = porSelecao(registrosDaVisao()), f = state.flags, b = state.busca.trim().toLowerCase();
+  if (f.enviado)    rs = rs.filter(function(r){ return r.enviado; });
+  if (f.naoEnviado) rs = rs.filter(function(r){ return !r.envioDispensado && !r.enviado; });
+  if (f.matriz)     rs = rs.filter(function(r){ return r.matFil.toUpperCase().indexOf('MATRIZ') >= 0; });
+  if (f.filial)     rs = rs.filter(function(r){ return r.matFil.toUpperCase().indexOf('FILIAL') >= 0; });
+  if (state.status === 'concluido') rs = rs.filter(function(r){ return r.status === 'concluido'; });
+  else if (state.status === 'pendente') rs = rs.filter(function(r){ return r.status === 'parcial' || r.status === 'pendente'; });
+  else if (state.status === 'na') rs = rs.filter(function(r){ return r.status === 'na'; });
+  if (b) rs = rs.filter(function(r){
+    return r.nome.toLowerCase().indexOf(b) >= 0 || r.cod.toLowerCase().indexOf(b) >= 0 || r.resp.toLowerCase().indexOf(b) >= 0;
+  });
+  return rs.slice().sort(function(a, b2){ return a.nome.localeCompare(b2.nome, 'pt-BR'); });
+}
+
+function celCampo(c){
+  if (!c) return '';
+  if (c.estado === 'ok') return '<span class="f-ok" title="Feito">✓</span>';
+  if (c.estado === 'pend') return c.txt ? '<span class="f-txt pend">' + esc(c.txt) + '</span>' : '<span class="f-pend" title="Pendente">—</span>';
+  return '<span class="f-txt">' + esc(c.txt || 'n/a') + '</span>';
+}
+function celProg(r){
+  if (r.status === 'na') return '<span class="t-sub">–</span>';
+  var cor = r.pct === 100 ? 'ok' : 'parc';
+  return '<div class="prog"><div class="seg"><i class="' + cor + '" style="width:' + r.pct + '%"></i></div><span>' + r.pct + '%</span></div>';
+}
+function celStatus(r){
+  var txt = { concluido: r.regime === 'sn' ? 'Enviado' : 'Concluído', parcial:'Parcial', pendente:'Pendente', na:'Não se aplica' }[r.status];
+  return '<span class="pill ' + r.status + '">' + txt + '</span>';
+}
+
+// Nome da empresa com cidade, matriz/filial e atividade numa segunda linha
+function celEmpresa(r){
+  var extra = [r.cidade + (r.cidade && r.uf ? '/' : '') + r.uf, nomePessoa(r.matFil), r.atividade].filter(Boolean);
+  return '<td class="t-nome">' + esc(r.nome) + (extra.length ? '<small>' + esc(extra.join(', ')) + '</small>' : '') + '</td>';
+}
+
+var COLUNAS = {
+  todos: [
+    ['Cód', function(r){ return '<td class="t-cod">' + esc(r.cod) + '</td>'; }],
+    ['Empresa', function(r){ return '<td class="t-nome">' + esc(r.nome) + '</td>'; }],
+    ['Responsável', function(r){ return '<td class="t-sub">' + esc(nomePessoa(r.resp)) + '</td>'; }],
+    ['Regime', function(r){ return '<td><span class="tag" style="--c:var(--' + r.regime + ')">' + esc(CONFIG.regimes[r.regime].nome) + '</span></td>'; }],
+    ['Progresso', function(r){ return '<td>' + celProg(r) + '</td>'; }],
+    ['Situação', function(r){ return '<td>' + celStatus(r) + '</td>'; }]
+  ],
+  lr: [
+    ['Cód', function(r){ return '<td class="t-cod">' + esc(r.cod) + '</td>'; }],
+    ['Razão social', celEmpresa],
+    ['Responsável', function(r){ return '<td class="t-sub">' + esc(nomePessoa(r.resp)) + '</td>'; }],
+    ['EFD ICMS', function(r){ return '<td class="c">' + celCampo(r.campos[0]) + '</td>'; }, 'c'],
+    ['EFD P/C', function(r){ return '<td class="c">' + celCampo(r.campos[1]) + '</td>'; }, 'c'],
+    ['Envio', function(r){ return '<td class="c">' + celCampo(r.campos[2]) + '</td>'; }, 'c'],
+    ['Progresso', function(r){ return '<td>' + celProg(r) + '</td>'; }],
+    ['Situação', function(r){ return '<td>' + celStatus(r) + '</td>'; }]
+  ],
+  lp: [
+    ['Cód', function(r){ return '<td class="t-cod">' + esc(r.cod) + '</td>'; }],
+    ['Razão social', celEmpresa],
+    ['Responsável', function(r){ return '<td class="t-sub">' + esc(nomePessoa(r.resp)) + '</td>'; }],
+    ['EFD ICMS/IPI', function(r){ return '<td class="c">' + celCampo(r.campos[0]) + '</td>'; }, 'c'],
+    ['EFD PIS/COFINS', function(r){ return '<td class="c">' + celCampo(r.campos[1]) + '</td>'; }, 'c'],
+    ['Envio', function(r){ return '<td class="c">' + celCampo(r.campos[2]) + '</td>'; }, 'c'],
+    ['Progresso', function(r){ return '<td>' + celProg(r) + '</td>'; }],
+    ['Situação', function(r){ return '<td>' + celStatus(r) + '</td>'; }]
+  ],
+  sn: [
+    ['Código', function(r){ return '<td class="t-cod">' + esc(r.cod) + '</td>'; }],
+    ['Empresa', function(r){ return '<td class="t-nome">' + esc(r.nome) + '</td>'; }],
+    ['Responsável', function(r){ return '<td class="t-sub">' + esc(nomePessoa(r.resp)) + '</td>'; }],
+    ['Enviado', function(r){ return '<td class="c">' + celCampo(r.campos[0]) + '</td>'; }, 'c'],
+    ['Situação', function(r){ return '<td>' + celStatus(r) + '</td>'; }]
+  ]
+};
+
+function temFiltro(){
+  return state.sel || state.status !== 'todos' || state.busca.trim() || Object.keys(state.flags).some(function(k){ return state.flags[k]; });
+}
+
+function renderTabela(){
+  var gs = regimesDaVisao();
+  var comAba = gs.filter(function(g){ return urlAba(g, state.mes); });
+  var carregados = comAba.filter(function(g){ var e = entrada(g); return e && e.registros; });
+  var el = $('tabela');
+
+  if (!comAba.length) {
+    $('conta').textContent = '';
+    el.innerHTML = '<div class="vazio"><strong>Sem planilha em ' + MES_NOME[state.mes] + '</strong>Escolha outro mês na barra acima.</div>';
+    return;
+  }
+  if (!carregados.length) {
+    var falhou = comAba.every(function(g){ var e = entrada(g); return e && e.erro && !e.carregando; });
+    $('conta').textContent = '';
+    el.innerHTML = falhou
+      ? '<div class="vazio"><strong>As planilhas não responderam</strong>Verifique a internet e tente de novo.<br><button class="btn" data-acao="atualizar">Atualizar agora</button></div>'
+      : '<div class="vazio">Buscando as planilhas de ' + MES_NOME[state.mes] + '…</div>';
+    return;
+  }
+
+  var rs = filtrados();
+  $('conta').textContent = plural(rs.length, 'empresa', 'empresas');
+  $('p-titulo').textContent = VISOES[state.view] + ', ' + MES_NOME[state.mes] + ' de ' + CONFIG.ano;
+  $('p-sub').textContent = rotuloSel() + '. ' + plural(rs.length, 'empresa', 'empresas') + '. Gerado em ' + new Date().toLocaleString('pt-BR') + '.';
+
+  if (!rs.length) {
+    el.innerHTML = '<div class="vazio"><strong>Nenhuma empresa com esses filtros</strong>' +
+      (temFiltro() ? '<button class="btn" data-acao="limpar">Limpar filtros</button>' : 'A planilha deste mês está vazia.') + '</div>';
+    return;
+  }
+  var cols = COLUNAS[state.view];
+  var h = '<table><thead><tr>' + cols.map(function(c){ return '<th' + (c[2] ? ' class="' + c[2] + '"' : '') + '>' + c[0] + '</th>'; }).join('') + '</tr></thead><tbody>';
+  for (var i = 0; i < rs.length; i++) {
+    h += '<tr>';
+    for (var k = 0; k < cols.length; k++) h += cols[k][1](rs[i]);
+    h += '</tr>';
+  }
+  el.innerHTML = h + '</tbody></table>';
+}
+
+function renderStatus(){
+  var es = regimesDaVisao().filter(function(g){ return urlAba(g, state.mes); }).map(entrada).filter(Boolean);
+  var dot = $('dot'), txt = $('status-txt');
+  if (!es.length) { dot.className = 'dot'; txt.textContent = 'Sem planilha neste mês'; return; }
+  if (es.some(function(e){ return e.carregando; })) { dot.className = 'dot load'; txt.textContent = 'Atualizando'; return; }
+  var bons = es.filter(function(e){ return e.em && !e.erro; });
+  if (!bons.length) { dot.className = 'dot err'; txt.textContent = 'Sem conexão com as planilhas'; return; }
+  var antigo = Math.min.apply(null, es.filter(function(e){ return e.em; }).map(function(e){ return e.em; }));
+  dot.className = 'dot ' + (bons.length === es.length ? 'ok' : 'err');
+  txt.innerHTML = 'Atualizado <span class="quando">às ' + hora(antigo) + '</span>';
+}
+
+function render(){
+  renderNav(); renderCabecalho(); renderAvisos(); renderRegimes();
+  renderPessoas(); renderResumo(); renderFlags(); renderTabela(); renderStatus();
+  gravarHash();
+}
+
+// ── Endereço (para cada pessoa poder salvar o seu painel nos favoritos) ───
+function lerHash(){
+  var p = {};
+  location.hash.replace(/^#/, '').split('&').forEach(function(kv){
+    var i = kv.indexOf('=');
+    if (i > 0) { try { p[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); } catch (e) {} }
+  });
+  if (VISOES[p.v]) state.view = p.v;
+  if (MESES.indexOf(p.m) >= 0) state.mes = p.m;
+  state.sel = p.r ? { tipo:'pessoa', nome:p.r } : p.e ? { tipo:'equipe', nome:p.e } : null;
+  state.status = ['concluido','pendente','na'].indexOf(p.s) >= 0 ? p.s : 'todos';
+}
+function gravarHash(){
+  var p = ['v=' + state.view];
+  if (state.mes !== mesPadrao()) p.push('m=' + state.mes);   // sem mês fixo, o favorito acompanha o calendário
+  if (state.sel) p.push((state.sel.tipo === 'pessoa' ? 'r=' : 'e=') + encodeURIComponent(state.sel.nome));
+  if (state.status !== 'todos') p.push('s=' + state.status);
+  try { history.replaceState(null, '', '#' + p.join('&')); } catch (e) {}
+}
+
+// ── Tema ──────────────────────────────────────────────────────────────────
+function temaAtual(){
+  var t = document.documentElement.getAttribute('data-theme');
+  if (t) return t;
+  return (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+}
+function aplicarTema(t){
+  if (t) document.documentElement.setAttribute('data-theme', t);
+  $('btn-tema').textContent = temaAtual() === 'dark' ? 'Tema claro' : 'Tema escuro';
+}
+
+// ── Eventos ───────────────────────────────────────────────────────────────
+document.addEventListener('click', function(ev){
+  var el = ev.target.closest('[data-view],[data-mes],[data-pessoa],[data-equipe],[data-status],[data-flag],[data-acao]');
+  if (!el) return;
+  var d = el.dataset;
+
+  if (d.view != null) {
+    if (d.view === state.view) return;
+    state.view = d.view; state.flags = {};
+    if (state.sel && state.sel.tipo === 'equipe' && state.view !== 'lr') state.sel = null;
+    render(); window.scrollTo(0, 0);
+  }
+  else if (d.mes != null) {
+    if (d.mes === state.mes) return;
+    state.mes = d.mes;
+    render();
+    if (!ultimaBusca[state.mes] || Date.now() - ultimaBusca[state.mes] > INTERVALO) carregarMes(state.mes, false);
+  }
+  else if (d.pessoa != null) {
+    var mesmo = state.sel && state.sel.tipo === 'pessoa' && state.sel.nome === d.pessoa;
+    state.sel = (d.pessoa && !mesmo) ? { tipo:'pessoa', nome:d.pessoa } : null;
+    render();
+  }
+  else if (d.equipe != null) {
+    var igual = state.sel && state.sel.tipo === 'equipe' && state.sel.nome === d.equipe;
+    state.sel = igual ? null : { tipo:'equipe', nome:d.equipe };
+    render();
+  }
+  else if (d.status != null) {
+    state.status = (state.status === d.status) ? 'todos' : d.status;
+    renderResumo(); renderTabela(); gravarHash();
+  }
+  else if (d.flag != null) {
+    var liga = !state.flags[d.flag];
+    if (d.flag === 'enviado' || d.flag === 'naoEnviado') { state.flags.enviado = state.flags.naoEnviado = false; }
+    if (d.flag === 'matriz' || d.flag === 'filial') { state.flags.matriz = state.flags.filial = false; }
+    state.flags[d.flag] = liga;
+    renderFlags(); renderTabela();
+  }
+  else if (d.acao === 'atualizar') carregarMes(state.mes, false);
+  else if (d.acao === 'imprimir') window.print();
+  else if (d.acao === 'limpar') {
+    state.sel = null; state.status = 'todos'; state.flags = {}; state.busca = ''; $('busca').value = '';
+    render();
+  }
+  else if (d.acao === 'tema') {
+    var novo = temaAtual() === 'dark' ? 'light' : 'dark';
+    aplicarTema(novo);
+    try { localStorage.setItem('controle-fiscal-tema', novo); } catch (e) {}
+  }
+});
+
+$('busca').addEventListener('input', function(){ state.busca = this.value; renderTabela(); });
+
+window.addEventListener('hashchange', function(){
+  lerHash(); render();
+  if (!ultimaBusca[state.mes]) carregarMes(state.mes, false);
+});
+
+// Atualização automática: a cada intervalo, e também quando a pessoa volta para a aba
+function conferir(){
+  renderStatus();
+  if (document.hidden) return;
+  if (Date.now() - (ultimaBusca[state.mes] || 0) >= INTERVALO) carregarMes(state.mes, true);
+}
+setInterval(conferir, 20000);
+document.addEventListener('visibilitychange', conferir);
+window.addEventListener('online', function(){ carregarMes(state.mes, true); });
+
+// ── Início ────────────────────────────────────────────────────────────────
+$('ano').textContent = CONFIG.ano;
+var salvo = null;
+try { salvo = localStorage.getItem('controle-fiscal-tema'); } catch (e) {}
+aplicarTema(salvo === 'dark' || salvo === 'light' ? salvo : null);
+lerHash();
+render();
+carregarMes(state.mes, false);
+
+})();
+</script>
+</body>
+</html>
