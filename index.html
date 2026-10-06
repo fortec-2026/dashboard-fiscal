@@ -17,7 +17,8 @@
   --ok:#3fe3ae; --ok-bg:rgba(63,227,174,.14); --parc:#ffc857; --parc-bg:rgba(255,200,87,.14);
   --pend:#ff6b8b; --pend-bg:rgba(255,107,139,.14); --na:#5a6394; --na-bg:rgba(90,99,148,.2);
   --lr:#9b8cff; --lp:#ff9a4d; --sn:#38c8ff;
-  --t0:#eaedff; --t1:#38e1ff; --t2:#a493ff; --t3:#ff6fd8; --t4:#ffc857; --t5:#5df2a6; --t6:#ff9a4d;
+  --t0:#eaedff; --t1:#38e1ff;
+  --e1:#c6f24a; --e2:#ff6fd8; --e3:#ffd84d; --e4:#2fe0c2; --e5:#ff8fa3; --e6:#b8c0ff;
   --glow:1;
   --disp:'Chakra Petch','IBM Plex Sans',system-ui,'Segoe UI',Arial,sans-serif;
   --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
@@ -28,7 +29,8 @@
   --ok:#0f9a6c; --ok-bg:#dcf5ea; --parc:#b97a0c; --parc-bg:#fbefd3;
   --pend:#c9304f; --pend-bg:#fde4ea; --na:#8a91b5; --na-bg:#eceef7;
   --lr:#6a59d1; --lp:#cf5f17; --sn:#0f86c9;
-  --t0:#131a3d; --t1:#0aa3c7; --t2:#6a59d1; --t3:#c93aa6; --t4:#b97a0c; --t5:#0f9a6c; --t6:#cf5f17;
+  --t0:#131a3d; --t1:#0aa3c7;
+  --e1:#5e8a00; --e2:#c93aa6; --e3:#a07800; --e4:#0a8f7a; --e5:#c9304f; --e6:#4b57b8;
   --glow:0;
 }
 
@@ -104,7 +106,7 @@ main{max-width:1480px;margin:0 auto;padding:24px 24px 60px}
 
 /* ── Painel principal: órbitas ────────────────────────────── */
 .painel{display:grid;grid-template-columns:auto minmax(260px,1fr) minmax(300px,1.15fr);gap:10px 30px;align-items:center;padding:22px 26px;margin-bottom:14px}
-.orbita{width:250px;max-width:100%}
+.orbita{width:270px;max-width:100%}
 .orbita svg{display:block;width:100%;height:auto;overflow:visible}
 .arco{fill:none;stroke-linecap:round;filter:drop-shadow(0 0 calc(5px*var(--glow)) currentColor)}
 .arco.parc{opacity:.38;filter:none}
@@ -116,6 +118,8 @@ body.entrada .arco{animation:desenha 1.1s cubic-bezier(.2,.7,.2,1) both}
 @keyframes desenha{from{stroke-dasharray:0 100}}
 
 .legenda{display:grid;gap:2px}
+.legenda.densa .leg{padding:4px 10px}
+.legenda.densa .leg strong{font-size:14px}
 .leg{display:grid;grid-template-columns:12px minmax(0,1fr) auto 48px;gap:10px;align-items:center;width:100%;text-align:left;padding:7px 10px;border-radius:8px;border:1px solid transparent}
 .leg:hover{background:var(--surface-2)}
 .leg.on{border-color:var(--tc);background:color-mix(in srgb,var(--tc) 10%,transparent)}
@@ -150,21 +154,22 @@ body.entrada .arco{animation:desenha 1.1s cubic-bezier(.2,.7,.2,1) both}
 .sec-head{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;margin:22px 2px 10px}
 .sec-head p{color:var(--muted);font-size:13px}
 .sec-head .btn{margin-left:auto}
-.times{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px}
-.time{flex:1 1 auto;min-width:min(100%,250px);padding:12px 14px 14px;border-top:2px solid var(--tc)}
-.time-head{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:4px 6px 10px;border-radius:8px}
-button.time-head:hover b{color:var(--tc)}
-.time-head b{display:block;font-family:var(--disp);font-weight:600;font-size:15px}
-.time-head small{color:var(--muted);font-size:12px}
-.time-head.on b{color:var(--tc)}
-.time-head .eq-pct{margin-left:auto;font-family:var(--disp);font-weight:700;font-size:20px;color:var(--tc);font-variant-numeric:tabular-nums}
-.tiles{display:flex;flex-wrap:wrap;gap:8px}
-.tile{display:grid;justify-items:center;gap:2px;width:104px;padding:10px 6px 9px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2)}
-.tile:hover{border-color:var(--tc)}
-.tile.on{border-color:var(--tc);background:color-mix(in srgb,var(--tc) 14%,var(--surface));box-shadow:0 0 calc(18px*var(--glow)) color-mix(in srgb,var(--tc) 30%,transparent)}
-.tile svg{width:64px;height:64px;color:var(--tc);overflow:visible;margin-bottom:4px}
-.tile-nome{font-weight:600;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tile-sub{color:var(--muted);font-size:11px;white-space:nowrap}
+.times{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:10px;align-items:start;margin-bottom:14px}
+.time{border-top:2px solid var(--tc);padding-bottom:6px;overflow:hidden}
+.time-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:baseline;width:100%;text-align:left;padding:9px 14px 8px;border-bottom:1px solid var(--line);margin-bottom:4px}
+button.time-head:hover,.time-head.on{background:color-mix(in srgb,var(--tc) 12%,transparent)}
+.time-head b{font-family:var(--disp);font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.time-head small{grid-column:1/-1;color:var(--muted);font-size:11px}
+.time-head .eq-pct{font-family:var(--disp);font-weight:700;font-size:17px;color:var(--tc);font-variant-numeric:tabular-nums}
+.pes{display:grid;grid-template-columns:22px minmax(0,1fr) auto 40px;gap:9px;align-items:center;width:100%;text-align:left;padding:4px 14px 4px 11px;border-left:3px solid transparent}
+.pes:hover{background:var(--surface-2)}
+.pes.on{border-left-color:var(--tc);background:color-mix(in srgb,var(--tc) 14%,transparent)}
+.pes svg{width:22px;height:22px;overflow:visible}
+.pes .arco{filter:none}
+.pes-nome{font-weight:500;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pes.on .pes-nome{font-weight:600}
+.pes-sub{color:var(--muted);font-size:11px;white-space:nowrap}
+.pes-pct{font-family:var(--disp);font-weight:600;font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
 
 /* ── Tabela ───────────────────────────────────────────────── */
 .toolbar{display:flex;align-items:center;gap:8px;padding:14px 16px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
@@ -233,7 +238,6 @@ th:last-child,td:last-child{padding-right:16px}
   .painel{grid-template-columns:1fr;padding:18px 16px;justify-items:center}
   .painel>div{width:100%}
   .orbita{width:220px!important}
-  .tile{width:calc(33.33% - 6px);min-width:92px}
   .busca{width:100%}
   .toolbar .conta{width:100%}
 }
@@ -551,6 +555,11 @@ function porSelecao(rs){
   var s = state.sel;
   if (!s) return rs;
   if (s.tipo === 'pessoa') return rs.filter(function(r){ return r.resp === s.nome; });
+  if (s.tipo === 'outros') {
+    var emEquipe = {};
+    CONFIG.equipes.forEach(function(e){ membros(e).forEach(function(n){ emEquipe[n] = 1; }); });
+    return rs.filter(function(r){ return r.regime === s.nome && !emEquipe[r.resp] && !foraDaLista(r); });
+  }
   var eq = equipePorNome(s.nome);
   if (!eq) return rs;
   var m = membros(eq);
@@ -575,6 +584,7 @@ function rotuloSel(){
   var s = state.sel;
   if (!s) return 'Todos os responsáveis';
   if (s.tipo === 'pessoa') return 'Carteira de ' + nomePessoa(s.nome);
+  if (s.tipo === 'outros') return 'Outros responsáveis, ' + (CONFIG.regimes[s.nome] ? CONFIG.regimes[s.nome].nome : '');
   var eq = equipePorNome(s.nome);
   return s.nome + (eq ? ', ' + plural(membros(eq).length, 'pessoa', 'pessoas') : '');
 }
@@ -644,14 +654,14 @@ function grupos(){
   registrosDaVisao().forEach(function(r){ if (!foraDaLista(r)) (mapa[r.resp] || (mapa[r.resp] = [])).push(r); });
   if (state.sel && state.sel.tipo === 'pessoa' && !mapa[state.sel.nome]) mapa[state.sel.nome] = [];
   var usados = {}, gs = [];
-  function monta(nome, equipe, cor, ms){
-    gs.push({ nome:nome, equipe:equipe, cor:cor, membros:ms, c:contar(ms.reduce(function(a, m){ return a.concat(m.regs); }, [])) });
+  function monta(nome, sel, cor, ms){
+    gs.push({ nome:nome, sel:sel, cor:cor, membros:ms, c:contar(ms.reduce(function(a, m){ return a.concat(m.regs); }, [])) });
   }
   CONFIG.equipes.forEach(function(eq, i){
     var ms = membros(eq).filter(function(n){ return mapa[n]; });
     if (!ms.length) return;
     ms.forEach(function(n){ usados[n] = 1; });
-    monta(eq.nome, true, 'var(--t' + (i % 6 + 1) + ')', ms.map(function(n){ return { nome:n, regs:mapa[n] }; }));
+    monta(eq.nome, { tipo:'equipe', nome:eq.nome }, 'var(--e' + (i % 6 + 1) + ')', ms.map(function(n){ return { nome:n, regs:mapa[n] }; }));
   });
   var temEquipe = gs.length > 0;
   function ordem(a, b){
@@ -659,19 +669,16 @@ function grupos(){
     return b.regs.length - a.regs.length || a.nome.localeCompare(b.nome, 'pt-BR');
   }
   var resto = Object.keys(mapa).filter(function(n){ return !usados[n]; });
-  if (state.view === 'todos') {
-    // na visão geral, um bloco para cada regime, na cor do regime
-    REGIMES.forEach(function(g){
-      var ms = resto.map(function(n){ return { nome:n, regs:mapa[n].filter(function(r){ return r.regime === g; }) }; })
-                    .filter(function(m){ return m.regs.length; }).sort(ordem);
-      if (ms.length) monta((temEquipe ? 'Outros responsáveis, ' : 'Responsáveis, ') + CONFIG.regimes[g].nome, false, 'var(--' + g + ')', ms);
-    });
-    var vazios = resto.filter(function(n){ return !mapa[n].length; });
-    if (vazios.length) monta('Outros responsáveis', false, 'var(--muted)', vazios.map(function(n){ return { nome:n, regs:[] }; }));
-  } else if (resto.length) {
-    monta(temEquipe ? 'Outros responsáveis' : 'Responsáveis', false, temEquipe ? 'var(--' + state.view + ')' : 'var(--t1)',
-      resto.map(function(n){ return { nome:n, regs:mapa[n] }; }).sort(ordem));
-  }
+  // quem está fora das equipes fica em um grupo por regime, na cor do regime
+  regimesDaVisao().forEach(function(g){
+    var ms = resto.map(function(n){ return { nome:n, regs:mapa[n].filter(function(r){ return r.regime === g; }) }; })
+                  .filter(function(m){ return m.regs.length; }).sort(ordem);
+    if (!ms.length) return;
+    var nome = state.view === 'todos' ? (temEquipe ? 'Outros, ' : '') + CONFIG.regimes[g].nome : (temEquipe ? 'Outros responsáveis' : 'Responsáveis');
+    monta(nome, { tipo:'outros', nome:g }, 'var(--' + g + ')', ms);
+  });
+  var vazios = resto.filter(function(n){ return !mapa[n].length; });
+  if (vazios.length) monta('Sem empresas neste mês', null, 'var(--muted)', vazios.map(function(n){ return { nome:n, regs:[] }; }));
   return { gs:gs };
 }
 
@@ -685,35 +692,32 @@ function arcos(c, cx, r, w, cor, apagado){
     (ok > 0.5 ? '<circle class="arco" pathLength="100" stroke="currentColor" stroke-dasharray="' + Math.min(ok, 100).toFixed(2) + ' 100"' + g + t + '/>' : '') +
     '</g>';
 }
-function anel(c, cor){
-  return '<svg viewBox="0 0 64 64" aria-hidden="true">' + arcos(c, 32, 27, 6, cor) +
-    '<text class="o-num" x="32" y="37" text-anchor="middle" font-size="15">' + (c.aplic ? c.pct + '%' : '–') + '</text></svg>';
-}
-function selEquipe(n){ return state.sel && state.sel.tipo === 'equipe' && state.sel.nome === n; }
-function selPessoa(n){ return state.sel && state.sel.tipo === 'pessoa' && state.sel.nome === n; }
+function mesmaSel(a){ return !!(a && state.sel && state.sel.tipo === a.tipo && state.sel.nome === a.nome); }
+function attrSel(a){ return (a.tipo === 'equipe' ? 'data-equipe' : 'data-outros') + '="' + esc(a.nome) + '"'; }
 
 function renderPainel(){
   var todos = registrosDaVisao(), G = grupos(), sn = state.view === 'sn';
   var geral = contar(todos), rs = porSelecao(todos), c = contar(rs);
-  var times = G.gs.filter(function(g){ return g.equipe; }).slice(0, 5);
+  var aneis = G.gs.filter(function(g){ return g.sel; }).slice(0, 8);
+  var emGrupo = state.sel && state.sel.tipo !== 'pessoa';
 
-  // órbitas: anel de fora = todos; um anel por equipe para dentro
-  var n = times.length, w = n ? 10 : 16, passo = n > 3 ? 15 : 17, r0 = 125 - 6 - w / 2;
-  var svg = arcos(geral, 125, r0, w, 'var(--t0)', state.sel && state.sel.tipo === 'equipe');
-  times.forEach(function(g, i){
-    svg += arcos(g.c, 125, r0 - (i + 1) * passo, w, g.cor, state.sel && state.sel.tipo === 'equipe' && !selEquipe(g.nome));
-  });
-  var rot = !state.sel ? (sn ? 'enviado' : 'concluído') : state.sel.tipo === 'pessoa' ? nomePessoa(state.sel.nome).split(' ')[0] : state.sel.nome.replace(/^Equipe\s+/i, 'Eq. ');
+  // órbitas: anel de fora = todos; para dentro, um anel por equipe e por grupo de outros responsáveis
+  var n = aneis.length, w = !n ? 16 : n > 5 ? 7 : 10, passo = n > 5 ? 11.5 : n > 3 ? 15 : 17, r0 = 125 - 6 - w / 2;
+  var svg = arcos(geral, 125, r0, w, 'var(--t0)', emGrupo);
+  aneis.forEach(function(g, i){ svg += arcos(g.c, 125, r0 - (i + 1) * passo, w, g.cor, emGrupo && !mesmaSel(g.sel)); });
+  var rot = !state.sel ? (sn ? 'enviado' : 'concluído') : state.sel.tipo === 'pessoa' ? nomePessoa(state.sel.nome).split(' ')[0]
+          : state.sel.tipo === 'outros' ? 'Outros' : state.sel.nome.replace(/^Equipe\s+/i, 'Eq. ');
   $('orbita').innerHTML = '<svg viewBox="0 0 250 250" role="img" aria-label="' + esc(rotuloSel()) + ': ' + c.pct + '% concluído">' + svg +
-    '<text class="o-num" x="125" y="' + (n > 3 ? 131 : 133) + '" text-anchor="middle" font-size="' + (n > 3 ? 24 : n ? 30 : 46) + '">' + (c.aplic ? c.pct + '%' : '–') + '</text>' +
-    '<text class="o-rot" x="125" y="' + (n > 3 ? 145 : n ? 150 : 156) + '" text-anchor="middle" font-size="' + (n > 3 ? 9 : 11) + '">' + esc(rot) + '</text></svg>';
+    '<text class="o-num" x="125" y="' + (n > 5 ? 131 : n > 3 ? 131 : 133) + '" text-anchor="middle" font-size="' + (n > 5 ? 18 : n > 3 ? 24 : n ? 30 : 46) + '">' + (c.aplic ? c.pct + '%' : '–') + '</text>' +
+    (n > 5 ? '' : '<text class="o-rot" x="125" y="' + (n > 3 ? 145 : n ? 150 : 156) + '" text-anchor="middle" font-size="' + (n > 3 ? 9 : 11) + '">' + esc(rot) + '</text>') + '</svg>';
 
   function linha(nome, cc, cor, attr, on){
     return '<button class="leg' + (on ? ' on' : '') + '" ' + attr + ' style="--tc:' + cor + '" aria-pressed="' + !!on + '">' +
       '<i></i><b>' + esc(nome) + '</b><span>' + plural(cc.total, 'empresa', 'empresas') + '</span><strong>' + (cc.aplic ? cc.pct + '%' : '–') + '</strong></button>';
   }
+  $('legenda').className = 'legenda' + (n > 5 ? ' densa' : '');
   $('legenda').innerHTML = linha('Todos', geral, 'var(--t0)', 'data-pessoa=""', !state.sel) +
-    times.map(function(g){ return linha(g.nome, g.c, g.cor, 'data-equipe="' + esc(g.nome) + '"', selEquipe(g.nome)); }).join('');
+    aneis.map(function(g){ return linha(g.nome, g.c, g.cor, attrSel(g.sel), mesmaSel(g.sel)); }).join('');
 
   function chip(st, txt, q, sw){
     return '<button class="chip" data-status="' + st + '" aria-pressed="' + (state.status === st) + '">' +
@@ -735,16 +739,17 @@ function renderPessoas(){
   var G = grupos();
   $('ver-todos').hidden = !state.sel;
   $('people').innerHTML = G.gs.map(function(g){
-    var on = g.equipe && selEquipe(g.nome);
-    var miolo = '<span><b>' + esc(g.nome) + '</b><small>' + g.c.concluido + ' de ' + g.c.aplic + ' concluídas</small></span><span class="eq-pct">' + (g.c.aplic ? g.c.pct + '%' : '–') + '</span>';
-    var cab = g.equipe
-      ? '<button class="time-head' + (on ? ' on' : '') + '" data-equipe="' + esc(g.nome) + '" aria-pressed="' + !!on + '" title="Ver a equipe inteira">' + miolo + '</button>'
+    var on = mesmaSel(g.sel);
+    var miolo = '<b>' + esc(g.nome) + '</b><span class="eq-pct">' + (g.c.aplic ? g.c.pct + '%' : '–') + '</span><small>' + g.c.concluido + ' de ' + g.c.aplic + ' concluídas</small>';
+    var cab = g.sel
+      ? '<button class="time-head' + (on ? ' on' : '') + '" ' + attrSel(g.sel) + ' aria-pressed="' + on + '" title="Ver o grupo inteiro">' + miolo + '</button>'
       : '<div class="time-head">' + miolo + '</div>';
-    return '<div class="time box" style="--tc:' + g.cor + '">' + cab + '<div class="tiles">' + g.membros.map(function(m){
-      var nm = m.nome, c = contar(m.regs), sel = selPessoa(nm);
-      return '<button class="tile' + (sel ? ' on' : '') + '" data-pessoa="' + esc(nm) + '" aria-pressed="' + !!sel + '" title="' + esc(nomePessoa(nm)) + ': ' + c.concluido + ' concluídas, ' + c.parcial + ' começadas, ' + c.pendente + ' pendentes">' +
-        anel(c, g.cor) + '<span class="tile-nome">' + esc(nomePessoa(nm)) + '</span><span class="tile-sub">' + c.concluido + ' de ' + c.aplic + '</span></button>';
-    }).join('') + '</div></div>';
+    return '<div class="time box" style="--tc:' + g.cor + '">' + cab + g.membros.map(function(m){
+      var c = contar(m.regs), sel = mesmaSel({ tipo:'pessoa', nome:m.nome });
+      return '<button class="pes' + (sel ? ' on' : '') + '" data-pessoa="' + esc(m.nome) + '" aria-pressed="' + sel + '" title="' + esc(nomePessoa(m.nome)) + ': ' + c.concluido + ' concluídas, ' + c.parcial + ' começadas, ' + c.pendente + ' pendentes">' +
+        '<svg viewBox="0 0 22 22" aria-hidden="true">' + arcos(c, 11, 8.5, 3.5, g.cor) + '</svg>' +
+        '<span class="pes-nome">' + esc(nomePessoa(m.nome)) + '</span><span class="pes-sub">' + c.concluido + ' de ' + c.aplic + '</span><span class="pes-pct">' + (c.aplic ? c.pct + '%' : '–') + '</span></button>';
+    }).join('') + '</div>';
   }).join('');
 }
 
@@ -796,7 +801,7 @@ function renderEvolucao(){
   }
   $('evolucao').innerHTML = s + '</svg>';
   var snDesde = gs.indexOf('sn') >= 0 ? CONFIG.regimes.sn.evolucaoAPartirDe : null;
-  var quem = !state.sel ? 'todos os responsáveis' : state.sel.tipo === 'pessoa' ? nomePessoa(state.sel.nome) : state.sel.nome;
+  var quem = !state.sel ? 'todos os responsáveis' : state.sel.tipo === 'pessoa' ? nomePessoa(state.sel.nome) : state.sel.tipo === 'outros' ? 'outros responsáveis do ' + CONFIG.regimes[state.sel.nome].nome : state.sel.nome;
   $('evol-sub').textContent = (state.view === 'sn' ? 'Percentual enviado' : 'Percentual concluído') + ' em cada mês, ' + quem + '.' +
     (snDesde ? ' O Simples Nacional entra a partir de ' + MES_NOME[snDesde] + '.' : '') + (faltam ? ' Buscando os meses anteriores.' : '');
 }
@@ -975,13 +980,13 @@ function lerHash(){
   });
   if (VISOES[p.v]) state.view = p.v;
   if (MESES.indexOf(p.m) >= 0) state.mes = p.m;
-  state.sel = p.r ? { tipo:'pessoa', nome:p.r } : p.e ? { tipo:'equipe', nome:p.e } : null;
+  state.sel = p.r ? { tipo:'pessoa', nome:p.r } : p.e ? { tipo:'equipe', nome:p.e } : (p.o && CONFIG.regimes[p.o]) ? { tipo:'outros', nome:p.o } : null;
   state.status = ['concluido','pendente','na'].indexOf(p.s) >= 0 ? p.s : 'todos';
 }
 function gravarHash(){
   var p = ['v=' + state.view];
   if (state.mes !== mesPadrao()) p.push('m=' + state.mes);   // sem mês fixo, o favorito acompanha o calendário
-  if (state.sel) p.push((state.sel.tipo === 'pessoa' ? 'r=' : 'e=') + encodeURIComponent(state.sel.nome));
+  if (state.sel) p.push({ pessoa:'r=', equipe:'e=', outros:'o=' }[state.sel.tipo] + encodeURIComponent(state.sel.nome));
   if (state.status !== 'todos') p.push('s=' + state.status);
   try { history.replaceState(null, '', '#' + p.join('&')); } catch (e) {}
 }
@@ -996,13 +1001,14 @@ function aplicarTema(t){
 
 // ── Eventos ───────────────────────────────────────────────────────────────
 document.addEventListener('click', function(ev){
-  var el = ev.target.closest('[data-view],[data-mes],[data-pessoa],[data-equipe],[data-status],[data-flag],[data-acao]');
+  var el = ev.target.closest('[data-view],[data-mes],[data-pessoa],[data-equipe],[data-outros],[data-status],[data-flag],[data-acao]');
   if (!el) return;
   var d = el.dataset;
 
   if (d.view != null) {
     if (d.view === state.view) return;
     state.view = d.view; state.flags = {};
+    if (state.sel && state.sel.tipo === 'outros' && state.view !== 'todos' && state.view !== state.sel.nome) state.sel = null;
     render(); window.scrollTo(0, 0);
   }
   else if (d.mes != null) {
@@ -1014,6 +1020,10 @@ document.addEventListener('click', function(ev){
   else if (d.pessoa != null) {
     var mesmo = state.sel && state.sel.tipo === 'pessoa' && state.sel.nome === d.pessoa;
     state.sel = (d.pessoa && !mesmo) ? { tipo:'pessoa', nome:d.pessoa } : null;
+    render();
+  }
+  else if (d.outros != null) {
+    state.sel = mesmaSel({ tipo:'outros', nome:d.outros }) ? null : { tipo:'outros', nome:d.outros };
     render();
   }
   else if (d.equipe != null) {
@@ -1081,7 +1091,7 @@ carregarMes(state.mes, false).then(carregarHistorico);
 // Os links das planilhas ficam cifrados (AES-GCM) aqui dentro e só abrem com a senha.
 (function () {
   'use strict';
-  var CIFRA = {"voltas":600000,"sal":"akmtMykPJcmCkaZsy0JcqA==","iv":"VXonmBj640n22xIY","dados":"4NTO62sa8ZkYCJXEAMBC+k6r05bSPWfI1+SI0n3Lvh8vniXnl5m4OuhODy1GuRLPVMLINUp+nrb1kaUOtw8P2+ApufPz8J+aoUcPUYVJ6K4a4x4MJu/kUxTxq9aMrvTcyZBgxzo3Y024nIo2SNlYKY/qB/tfdTUPCTtPdkYM2w+MHL8o6tHuhu0t9xqfsMfTJYMZjXTIApV7I9wNpeeHqes26HKMEnkCpJ23sIRWIf4c0H/UNObbHD0C+JqQPwm4Yb+PvOfw2BOnwNco6tpfSOJt3Roe4FeXfUQMaabm+YYQdpElJDL1Z3mFfgieJVg9XOj23ue+lNCo4wA9+MvveigkTqa3/JaTa5OTJi0BXoiY4HdUG+5Zo4CWpNtHOotO1HYu9C8GYa/CqxAbtjcS2PBzwAKyjXzlSnUGGFPDVnLorqk2/ibO5kdWv3WpFV9+2xYcSm9hf1R22jb4VPXj/M8nkAjBMAgLdKHh6iqG4n+C7/DBKjbj+49pKMu3ORdh17QxFK70Gm1KIaPh27EnPSReyUV5jx6RcecMbOuRVyqFy+ZIu+cbkM9E+dnYtol3kk6gG31g8gWrkTeu58ZgfM2+On0z+t3rhxAzZVxquH8ljji6mdfFLqgwempq3NfuifaGxaQk+FneFFkOrNaFUcSbkbpxDPzqIAX9mrkCpmkeIGG1K7Bl9S6WId5j8rLUDVUme59pD5piRkJd2nAvDpZAN/gQMt6yKZC5mMRSeqsslopJ6Ep8RE1fHQ/QZ0eHDNRhLxUIKNGw09tFRoJ+k6+clSGpeJLUYJOvMOQbK7ciUZk+1imbWsP9mM53+bm7jGZQ4Xe/yUdKv79YEgi1OVfn60JajP3rWUe3/6Leq69iZviyMPkOWiRIDp3qYvY7k4hGCFiVGmmonf7e6DdQ4hX/M9vNwIcCsMs9ZgjzVbDFZxZJuPIpZt15v6GW2deIzN458xxYDZYPkIniF1ySxDL9OVbayijZC7HLER/JssF3aGa3bFVvEVIOOjLV3hktXu/qpktzPJ2V5/DFZdOU9Ff+lwvCMnu7MUmSxA/jvHWBctERsf5iYkXu7OGDsOnmbepyU6IVL1RB6vKWzLXaVSLC7z/5RZi426qaZr3jYBWm1UpqW438ptuKvX2jvJI5zCB24QJbYcibJBXBiDA0A2Sw9Pyi9QGmNNwQUfs20vvuEu9WjDauGOBNewirWJEg+uB2fUe/p5BqFNtOsnblOOrR/2+sbn8+Gu98b/DlauR4UHfJk/TpL82CFl1YgPyhwUXLyBa5X1ds/D3tdyu1khP/GqhO3x/GmnzJBHl47NC1TYudvFuP88osFaJHQD+cZqPkj3+oJfmS3BNzxd0LL5CPVmN3i/pEPheOI+wmgNIeFYDYtq0sF3ehwLQUW0tknLRJVvn3+nPbTY7YDMOVH0WXuMDpkxnD6NwxATS25ptw3OO6YG1yMLkOn2nmT/+ZaZPOHHjeejcFRkptApcC2gvJ6gRSW6rlV7U1f58XRXnnUf1hOB8rTkAPUzVcyurzTAn2AIElMCcTS3lytNWS0kB+3bdaIZIrrZPVP08SBE/SomuoI37FqsmdLKF4qrbUu1UixgmOU1UeWqk8gjoeB6sUKXt+KChXcmcYeDN4GsDdeva2eu8izJA3wGJqSR5NwDrg9NvchzHfe9QFqCv5OIapQw9Gp+eLSvx4LadhdhTWXg62MWoq6EYDia7eicloTyXfjTmDQTYgaAxYlho4aPdKAj9cA1lfpMicPRb2H/d73hbSqObdCPxcqe8JOISns1+Uu63nvYAO4kLZvk1N5M+oUvM1y14V1U7V"};
+  var CIFRA = {"voltas":600000,"sal":"ULelAN/QynTILLpsPa5qyw==","iv":"HTMRNvcmxRtaha5R","dados":"E/aYjqAMPE/NPY8qv1t3PuATuuoTEm+K2RVdQk1WqLMMK431oREMeKY9FHMBGI5osCxHzJiiHRLnfCDUJX+IVywfrFcalXpQUm0+76IHk3OQHD0Ng6YEPqQSYSu5yeJC7b44z5od3uDHNLuDQzHk0VinkY+j0Kuh4KYo+2g0TwxR8/hoBdKObocYyGXVtnCNpt8wmfvKUP1MdlkNeYn5jyNWxXYbKqbZtz4xOjyzQtxxkSWZ1noK21OlTFkVrgO61zqDk4Q0CLY+pScFJNi2HnAmDm/gaN/jvkzemWYRYgk5rHh/WHFYKpunyT6IV+QFtJ+o/Y8kS50NU//aFQP6tYQJVp/FU1yhDqlNy2j6sJfVbNvgWaVsQivPtNJ6WIU4/LLV52HinGkQUraaNmepdoJ/cKF+JXhDQTJJl4N25sUXhMkbfgCyRSBm5wMPBFtlZVC55ydytpsxQyxDDP2TGdXGJbrvD2u5B4wsNeKggFnKEB12p1qSMd2TVvVRu5LH3RVgaeBKna0YvQamJsVo+4iCjRvY6yKwOmla7S8uvoDt2nkCk6ngsmPFI1EZNbkmc5zG/Tx7EYat5qGWzl9jO4ofgGX/dcybbNeg6XVgoPd1nWc9svr1GOvkBOCYss4i8a1QAm9lmOBvs5FYQ25e4kL9iFa/cw/NkeyGU805K2yUcAG6vrQcwQvRRkzlVB18WC+7RBBMFBMcIl5iVPWQDHGUZcTg1edZF/xtjxhODe7WjjjXPIciCCV2xQOLl48oh0O5h64y7BrDD1Qy7tSaBCAJ76RuGxOYd4Y4k7jZJTLr+TMvANiXS4ZdI5RuL2VY2Gs67FbpsYHtnOrmmpbRQchv0gvwi1qdFXAdN/vUW0vG+w5DYH9ddMhlXPb7R6aZA7PhdR8Cq1pv6W5Cl/1MvqEebfCcoE7OqvtvDWioxlRJ2Y3wtoPJGAVZBgSiW7rhx0Nm7/g9bnAcE/3ehlZp+zZXeKAMdI9jlHZWduhUHNEGbYn2gYRwYqTVIFH51giS9/yimeX5uLe3budYvrxHNhM0Kdxo0zn30FgFlKCkvUN5CGMycI2W9IdfPNjeQNZY/mcHYxUxyaV6Q8QwqJgH/4oR3CDZ3jNQdTSSjT0/N7HWeJHmA1Baxf4sCYcMI85tKp1EU1QfmjhvbAoYg8oIHdaM62U8lfk8PWMl18aBcZAidDbwrSYngaPNqWLa38/NbE128nsTpocDNAlwg3ACzz9iSYjI4X6cg22Sq0mg7U02LHSw7MO421ovHdc699tItquhoyl9XGmmqPXFRTc7VRYk+t3m/D8mNZqm2TKnHvnnkBdecGRwnX9N/RqZJ5x6TIEujVf+EHeG8tI/6tBSvVozTFg67eqbxoTF2IKqc7qwgKM4WrggvKg4nnIRgu+rAJ/LGpRXzumrJd3tXkoUzXOwbw7ou3Qf5EtaqETKAXZaxyu8OAyzfaUKeYi1BGeVUAebqRQBAfrZM74pV+8lg5h4U+yBHnbtoFgrl/4E8PzxgfM6nSViOB9yuDWq9Y/DM42LS5lclgwopwZKrASjCkZ8r6emLM0HvDiFgbik96rw64gic2HpUc4KmrhJfjkfoGBm/DIyOvY6Z+5B1XusFPY3YPOIjzn7H4786Y3+FsAkkeuF4udYEYe7JCt+wbC0qajSNkKdZeOW5uu5QlnCa98HOQK/Bd6E58RwFPgH3hzwLXnyx0s5ti5vH46Q77ycuP87ETrOb9NevR0B7x9ctMEAubAddJs9tqLS2A86WJEfbG6/mXiIRs98kBDJsaZWnXWltpFgqBns95zIJ4cPvwpydVBm3mpbA8Ov"};
   var GUARDA = 'controle-fiscal-chave';
   var caixa = document.getElementById('trava'), form = document.getElementById('trava-form');
   var msg = document.getElementById('trava-msg'), campo = document.getElementById('trava-senha');
