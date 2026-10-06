@@ -644,19 +644,35 @@ function grupos(){
   registrosDaVisao().forEach(function(r){ if (!foraDaLista(r)) (mapa[r.resp] || (mapa[r.resp] = [])).push(r); });
   if (state.sel && state.sel.tipo === 'pessoa' && !mapa[state.sel.nome]) mapa[state.sel.nome] = [];
   var usados = {}, gs = [];
-  function junta(ns){ return ns.reduce(function(a, n){ return a.concat(mapa[n]); }, []); }
+  function monta(nome, equipe, cor, ms){
+    gs.push({ nome:nome, equipe:equipe, cor:cor, membros:ms, c:contar(ms.reduce(function(a, m){ return a.concat(m.regs); }, [])) });
+  }
   CONFIG.equipes.forEach(function(eq, i){
     var ms = membros(eq).filter(function(n){ return mapa[n]; });
     if (!ms.length) return;
     ms.forEach(function(n){ usados[n] = 1; });
-    gs.push({ nome:eq.nome, equipe:true, cor:'var(--t' + (i % 6 + 1) + ')', membros:ms, c:contar(junta(ms)) });
+    monta(eq.nome, true, 'var(--t' + (i % 6 + 1) + ')', ms.map(function(n){ return { nome:n, regs:mapa[n] }; }));
   });
-  var resto = Object.keys(mapa).filter(function(n){ return !usados[n]; }).sort(function(a, b){
-    if (a === 'SEM RESP') return 1; if (b === 'SEM RESP') return -1;
-    return mapa[b].length - mapa[a].length || a.localeCompare(b, 'pt-BR');
-  });
-  if (resto.length) gs.push({ nome: gs.length ? 'Outros responsáveis' : 'Responsáveis', equipe:false, cor:'var(--t' + (gs.length % 6 + 1) + ')', membros:resto, c:contar(junta(resto)) });
-  return { gs:gs, mapa:mapa };
+  var temEquipe = gs.length > 0;
+  function ordem(a, b){
+    if (a.nome === 'SEM RESP') return 1; if (b.nome === 'SEM RESP') return -1;
+    return b.regs.length - a.regs.length || a.nome.localeCompare(b.nome, 'pt-BR');
+  }
+  var resto = Object.keys(mapa).filter(function(n){ return !usados[n]; });
+  if (state.view === 'todos') {
+    // na visão geral, um bloco para cada regime, na cor do regime
+    REGIMES.forEach(function(g){
+      var ms = resto.map(function(n){ return { nome:n, regs:mapa[n].filter(function(r){ return r.regime === g; }) }; })
+                    .filter(function(m){ return m.regs.length; }).sort(ordem);
+      if (ms.length) monta((temEquipe ? 'Outros responsáveis, ' : 'Responsáveis, ') + CONFIG.regimes[g].nome, false, 'var(--' + g + ')', ms);
+    });
+    var vazios = resto.filter(function(n){ return !mapa[n].length; });
+    if (vazios.length) monta('Outros responsáveis', false, 'var(--muted)', vazios.map(function(n){ return { nome:n, regs:[] }; }));
+  } else if (resto.length) {
+    monta(temEquipe ? 'Outros responsáveis' : 'Responsáveis', false, temEquipe ? 'var(--' + state.view + ')' : 'var(--t1)',
+      resto.map(function(n){ return { nome:n, regs:mapa[n] }; }).sort(ordem));
+  }
+  return { gs:gs };
 }
 
 // Um anel: parte cheia = concluído, parte clara = começado, resto = pendente
@@ -724,8 +740,8 @@ function renderPessoas(){
     var cab = g.equipe
       ? '<button class="time-head' + (on ? ' on' : '') + '" data-equipe="' + esc(g.nome) + '" aria-pressed="' + !!on + '" title="Ver a equipe inteira">' + miolo + '</button>'
       : '<div class="time-head">' + miolo + '</div>';
-    return '<div class="time box" style="--tc:' + g.cor + '">' + cab + '<div class="tiles">' + g.membros.map(function(nm){
-      var c = contar(G.mapa[nm]), sel = selPessoa(nm);
+    return '<div class="time box" style="--tc:' + g.cor + '">' + cab + '<div class="tiles">' + g.membros.map(function(m){
+      var nm = m.nome, c = contar(m.regs), sel = selPessoa(nm);
       return '<button class="tile' + (sel ? ' on' : '') + '" data-pessoa="' + esc(nm) + '" aria-pressed="' + !!sel + '" title="' + esc(nomePessoa(nm)) + ': ' + c.concluido + ' concluídas, ' + c.parcial + ' começadas, ' + c.pendente + ' pendentes">' +
         anel(c, g.cor) + '<span class="tile-nome">' + esc(nomePessoa(nm)) + '</span><span class="tile-sub">' + c.concluido + ' de ' + c.aplic + '</span></button>';
     }).join('') + '</div></div>';
@@ -737,13 +753,17 @@ function ultimoMesComDados(){
   var hoje = new Date();
   return hoje.getFullYear() > CONFIG.ano ? 11 : hoje.getFullYear() < CONFIG.ano ? -1 : hoje.getMonth();
 }
+function naEvolucao(g, i){
+  var desde = CONFIG.regimes[g].evolucaoAPartirDe;
+  return !!urlAba(g, MESES[i]) && (!desde || i >= MESES.indexOf(desde));
+}
 function renderEvolucao(){
   var lim = ultimoMesComDados(), gs = regimesDaVisao(), pts = [], faltam = 0;
   MESES.forEach(function(m, i){
     if (i > lim) return;
     var regs = [], tem = false, falta = false;
     gs.forEach(function(g){
-      if (!urlAba(g, m)) return;
+      if (!naEvolucao(g, i)) return;
       var e = cache[g + ':' + m];
       if (e && e.registros) { regs = regs.concat(e.registros); tem = true; } else if (!e || !e.erro) falta = true;
     });
@@ -760,7 +780,7 @@ function renderEvolucao(){
     s += '<line class="e-grade" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/><text class="e-eixo" x="' + (L - 6) + '" y="' + (Y(v) + 3) + '" text-anchor="end">' + v + '</text>';
   });
   MESES.forEach(function(m, i){
-    var ok = i <= lim && gs.some(function(g){ return urlAba(g, m); });
+    var ok = i <= lim && gs.some(function(g){ return naEvolucao(g, i); });
     s += '<text class="e-eixo e-mes' + (m === state.mes ? ' atual' : '') + (ok ? '' : ' futuro') + '" x="' + X(i) + '" y="' + (H - 6) + '" text-anchor="middle"' + (ok ? ' data-mes="' + m + '"' : '') + '>' + MES_CURTO[m] + '</text>';
   });
   if (pts.length) {
@@ -775,8 +795,10 @@ function renderEvolucao(){
     });
   }
   $('evolucao').innerHTML = s + '</svg>';
+  var snDesde = gs.indexOf('sn') >= 0 ? CONFIG.regimes.sn.evolucaoAPartirDe : null;
   var quem = !state.sel ? 'todos os responsáveis' : state.sel.tipo === 'pessoa' ? nomePessoa(state.sel.nome) : state.sel.nome;
-  $('evol-sub').textContent = (state.view === 'sn' ? 'Percentual enviado' : 'Percentual concluído') + ' em cada mês, ' + quem + '.' + (faltam ? ' Buscando os meses anteriores.' : '');
+  $('evol-sub').textContent = (state.view === 'sn' ? 'Percentual enviado' : 'Percentual concluído') + ' em cada mês, ' + quem + '.' +
+    (snDesde ? ' O Simples Nacional entra a partir de ' + MES_NOME[snDesde] + '.' : '') + (faltam ? ' Buscando os meses anteriores.' : '');
 }
 
 // Busca os meses anteriores uma vez, em segundo plano, só para desenhar a evolução
@@ -785,7 +807,7 @@ function carregarHistorico(){
   if (historicoPedido) return;
   historicoPedido = true;
   var lim = ultimoMesComDados(), fila = [];
-  for (var i = lim; i >= 0; i--) REGIMES.forEach(function(g){ if (urlAba(g, MESES[i])) fila.push([g, MESES[i]]); });
+  for (var i = lim; i >= 0; i--) REGIMES.forEach(function(g){ if (naEvolucao(g, i)) fila.push([g, MESES[i]]); });
   function proximo(){
     var it = fila.shift();
     if (!it) return;
@@ -1059,7 +1081,7 @@ carregarMes(state.mes, false).then(carregarHistorico);
 // Os links das planilhas ficam cifrados (AES-GCM) aqui dentro e só abrem com a senha.
 (function () {
   'use strict';
-  var CIFRA = {"voltas":600000,"sal":"MTpnLArGdfd3E3/u2IctTA==","iv":"ViU+yQtWyl74sBiJ","dados":"CTNadNjxXvWaBDOPC7eryrcjbKJ+9QBcmg2LOyqvOcCBonri4bIlObu5fE2T7q6uuGRH9mwr8Nxht5I5D/oa+wcm4MzXhHJIWire9YWHVO19lraHd78lo1hUicauyJJHCcetU6BC3jm1YDrEa4F3A+J7tdO5COKJWqSrNAOIVwzrxU5p+p/525Brzxgmgux0QBQsFjIRNVU0LAnqk7Zw0RsYgGP3Yz1TdJbm89E6Aa7ggqsA73GhD9ZaxZz9STupaI9ji9Yb2RswRNPKnHQPTTJhiTQWv/7Ju+1+Aam3XOuZ+jvvT7r4riPNXfWQYi7EAgTcOLHAD1AzrX9pyyu3FpltzmkFXHdUdMCHoBACNcmoNWSPD0sPW9CSG/OKC6qG0oJ+xIaLDTIZj8KiCWgM8pwCMfDl5XP4tuOKRKBwWWWQLrD3l9aUijgmATV/1n33GUTKUzBtREq3gxlDMsBYMFo2WIQLj73/bagf61obIpHmay9sb1fQPDEcR/zMSeh1ncqJD6PVnCa8VCnhSmdt1z/yZur1DkDczN5qZIWs7E/2SY7x/ZqAbLo8qr2DsWRxz5f4Iwi2+Oh53riYmbgpW259AobTkRri/dwt26Mzz0Abr+Wh+PJ68KkxnHqFxaljaQCV6O7wXFV/aPGbp1UjHPeD3CypBEt2h+jZxk1RHDrvyPc9QwJnW20uP100wvyuJuwcPR8zW2I+KJvodiVRQhpYSznSz4YxPIDuHRf8k4IbE8DCZaPkGuzgEUPuVQvkuiP+PIhgz+a62j8fQuqjWl2o4jZT1GKy4LUkDaQeq87VAgwFbd0kyiJcZ1xLovnb9HJeBRPVLsI9+z3WhmoTYYESjtTEVmSkUxfeeJf+L/venQw+4wNLMoChcyKGvdA9slnosTvKrSRztKo+KDStXPQTYPVsxfZayYkjh/YW0pTjR95AfzB6yt8qzW3Ii09NJd5BlcPmn9WSRkgAqiM9ovT2wtOJX7sIH0bTwuNVRddj0M4zE3C392c+WR30vOhsJogCK7D7HV4spgNXx60Ro3oFNtupwWF3XORMC436Dk1nQKL3F47uLiKulHk7xAPZWLZgho3u2uR2pPj7CJMJUH7Yd4OnwZazekCZqrfq1+AAGV7+UMxfJYtbm3SllO1HmcNBShy1vooLzhn6/fsVewFdFGH5zuqzZ0x7uLwHLc5nnGcdm/Fvey2J6DXYM+fkYjDa91pH1kZtw7wu6sVuac82enrc1RTHU+BVLVFl1AWkC0P+0I56WbXlP4D62P2H6fc2sjIKvhAOO4sPJx/Zb0+HH3UOZ8qzDSeC+Em3k/ydo4eTqTpnvEijRndyOpxZwhVqgWBffiDqSc7xmEexRWgpYUxmlqmgusNqr7UIK92/SpYSc3DoJQ7p+2YO09axDLC84pZLTvJdWiCZuPoYonUUX7OL0bxcSxnQKy7qDROh4UnoSx4PjFZPXDVh44dF6KGkZuYoEBUMAqTQu1pvcGgS/gwX1YBd4hIpjOwb66MN/CLrFX+QX+CIgitMqTK9Sr7nod6bwWDRpyEnNaDaDQ28ghDLGZ/mndp72xrVrrCogv9rZoXLb4JygRdd7w9x6Eu+ETdpbCVk0naLcQ5tWDlQxU2Ey5aeRxbOdsJYhNABFDD3pEC3twfu3E3etuKSYMStGg1ivK29ETPHvNCJmeW47mOtLwUYk/RA+clEgp5UpPTZyc2puacAdDt4IdU6UYDHsCQJ20bNqTNxyz/dET+KBDcaC6x0HeF0Yxn8YwPVVEmKG5hjcw7ztT7Z8o1nqA=="};
+  var CIFRA = {"voltas":600000,"sal":"akmtMykPJcmCkaZsy0JcqA==","iv":"VXonmBj640n22xIY","dados":"4NTO62sa8ZkYCJXEAMBC+k6r05bSPWfI1+SI0n3Lvh8vniXnl5m4OuhODy1GuRLPVMLINUp+nrb1kaUOtw8P2+ApufPz8J+aoUcPUYVJ6K4a4x4MJu/kUxTxq9aMrvTcyZBgxzo3Y024nIo2SNlYKY/qB/tfdTUPCTtPdkYM2w+MHL8o6tHuhu0t9xqfsMfTJYMZjXTIApV7I9wNpeeHqes26HKMEnkCpJ23sIRWIf4c0H/UNObbHD0C+JqQPwm4Yb+PvOfw2BOnwNco6tpfSOJt3Roe4FeXfUQMaabm+YYQdpElJDL1Z3mFfgieJVg9XOj23ue+lNCo4wA9+MvveigkTqa3/JaTa5OTJi0BXoiY4HdUG+5Zo4CWpNtHOotO1HYu9C8GYa/CqxAbtjcS2PBzwAKyjXzlSnUGGFPDVnLorqk2/ibO5kdWv3WpFV9+2xYcSm9hf1R22jb4VPXj/M8nkAjBMAgLdKHh6iqG4n+C7/DBKjbj+49pKMu3ORdh17QxFK70Gm1KIaPh27EnPSReyUV5jx6RcecMbOuRVyqFy+ZIu+cbkM9E+dnYtol3kk6gG31g8gWrkTeu58ZgfM2+On0z+t3rhxAzZVxquH8ljji6mdfFLqgwempq3NfuifaGxaQk+FneFFkOrNaFUcSbkbpxDPzqIAX9mrkCpmkeIGG1K7Bl9S6WId5j8rLUDVUme59pD5piRkJd2nAvDpZAN/gQMt6yKZC5mMRSeqsslopJ6Ep8RE1fHQ/QZ0eHDNRhLxUIKNGw09tFRoJ+k6+clSGpeJLUYJOvMOQbK7ciUZk+1imbWsP9mM53+bm7jGZQ4Xe/yUdKv79YEgi1OVfn60JajP3rWUe3/6Leq69iZviyMPkOWiRIDp3qYvY7k4hGCFiVGmmonf7e6DdQ4hX/M9vNwIcCsMs9ZgjzVbDFZxZJuPIpZt15v6GW2deIzN458xxYDZYPkIniF1ySxDL9OVbayijZC7HLER/JssF3aGa3bFVvEVIOOjLV3hktXu/qpktzPJ2V5/DFZdOU9Ff+lwvCMnu7MUmSxA/jvHWBctERsf5iYkXu7OGDsOnmbepyU6IVL1RB6vKWzLXaVSLC7z/5RZi426qaZr3jYBWm1UpqW438ptuKvX2jvJI5zCB24QJbYcibJBXBiDA0A2Sw9Pyi9QGmNNwQUfs20vvuEu9WjDauGOBNewirWJEg+uB2fUe/p5BqFNtOsnblOOrR/2+sbn8+Gu98b/DlauR4UHfJk/TpL82CFl1YgPyhwUXLyBa5X1ds/D3tdyu1khP/GqhO3x/GmnzJBHl47NC1TYudvFuP88osFaJHQD+cZqPkj3+oJfmS3BNzxd0LL5CPVmN3i/pEPheOI+wmgNIeFYDYtq0sF3ehwLQUW0tknLRJVvn3+nPbTY7YDMOVH0WXuMDpkxnD6NwxATS25ptw3OO6YG1yMLkOn2nmT/+ZaZPOHHjeejcFRkptApcC2gvJ6gRSW6rlV7U1f58XRXnnUf1hOB8rTkAPUzVcyurzTAn2AIElMCcTS3lytNWS0kB+3bdaIZIrrZPVP08SBE/SomuoI37FqsmdLKF4qrbUu1UixgmOU1UeWqk8gjoeB6sUKXt+KChXcmcYeDN4GsDdeva2eu8izJA3wGJqSR5NwDrg9NvchzHfe9QFqCv5OIapQw9Gp+eLSvx4LadhdhTWXg62MWoq6EYDia7eicloTyXfjTmDQTYgaAxYlho4aPdKAj9cA1lfpMicPRb2H/d73hbSqObdCPxcqe8JOISns1+Uu63nvYAO4kLZvk1N5M+oUvM1y14V1U7V"};
   var GUARDA = 'controle-fiscal-chave';
   var caixa = document.getElementById('trava'), form = document.getElementById('trava-form');
   var msg = document.getElementById('trava-msg'), campo = document.getElementById('trava-senha');
