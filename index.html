@@ -83,6 +83,10 @@ main{max-width:1480px;margin:0 auto;padding:24px 24px 60px}
 
 .avisos{display:grid;gap:6px;margin-bottom:14px}
 .avisos:empty{display:none}
+.recado{border:1px solid color-mix(in srgb,var(--parc) 55%,transparent);border-left:4px solid var(--parc);background:linear-gradient(100deg,var(--parc-bg),transparent 85%),var(--surface);border-radius:12px;padding:14px 18px 15px;margin-bottom:18px;box-shadow:0 0 calc(22px*var(--glow)) color-mix(in srgb,var(--parc) 22%,transparent)}
+.recado h2{color:var(--parc);font-size:17px;margin-bottom:6px}
+.recado p{white-space:pre-line;font-size:14px;line-height:1.55;max-width:90ch}
+.recado strong{color:var(--parc);font-weight:600}
 .aviso{border-left:3px solid var(--parc);background:var(--parc-bg);padding:8px 12px;font-size:13px;border-radius:0 8px 8px 0}
 .aviso.erro{border-left-color:var(--pend);background:var(--pend-bg)}
 
@@ -248,7 +252,7 @@ th:last-child,td:last-child{padding-right:16px}
   :root,:root[data-theme="light"]{--bg:#fff;--surface:#fff;--surface-2:#fff;--ink:#000;--muted:#444;--line:#ccc;--line-strong:#999;--stripe:#f2f3f8;--track:#ddd;--ok:#14633c;--ok-bg:#e2f2e8;--parc:#8a5a00;--parc-bg:#fbefd3;--pend:#a02d1c;--pend-bg:#fbe6e1;--na:#888;--na-bg:#eee;--glow:0}
   body{font-size:10px}
   body::before{display:none}
-  .top,.painel,.equipes,.regimes,.toolbar,.avisos,.head{display:none!important}
+  .top,.painel,.equipes,.regimes,.toolbar,.avisos,.recado,.head{display:none!important}
   main{padding:0;max-width:none}
   .box{border:0}
   .print-head{display:block;margin-bottom:8px}
@@ -299,6 +303,7 @@ th:last-child,td:last-child{padding-right:16px}
     <h1 id="titulo"></h1>
     <p id="subtitulo"></p>
   </div>
+  <aside class="recado" id="recado" hidden></aside>
   <div class="avisos" id="avisos"></div>
   <div class="regimes" id="regimes" hidden></div>
 
@@ -610,6 +615,22 @@ function renderCabecalho(){
   var sub = rotuloSel();
   if (state.view !== 'todos') { var e = entrada(state.view); if (e && e.titulo) sub += '. Planilha: ' + e.titulo; }
   $('subtitulo').textContent = sub;
+}
+
+// Recado fixo do escritório: vem da configuração e some sozinho depois da data "ate"
+function renderRecado(){
+  var r = CONFIG.recado, el = $('recado');
+  var texto = r && r.texto ? String(r.texto).trim() : '';
+  var vale = !!texto;
+  if (vale && r.ate) {
+    var d = String(r.ate).split('-');
+    vale = new Date() < new Date(+d[0], +d[1] - 1, +d[2] + 1);   // vale até o fim do dia "ate"
+  }
+  el.hidden = !vale;
+  if (!vale) { el.innerHTML = ''; return; }
+  var html = (r.titulo ? '<h2>' + esc(r.titulo) + '</h2>' : '') +
+    '<p>' + esc(texto).replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>') + '</p>';
+  if (el.innerHTML !== html) el.innerHTML = html;
 }
 
 function renderAvisos(){
@@ -976,7 +997,7 @@ function renderStatus(){
 }
 
 function render(){
-  renderNav(); renderCabecalho(); renderAvisos(); renderRegimes();
+  renderNav(); renderCabecalho(); renderRecado(); renderAvisos(); renderRegimes();
   renderPainel(); renderEvolucao(); renderPessoas(); renderFlags(); renderTabela(); renderStatus();
   gravarHash();
 }
@@ -1079,7 +1100,7 @@ window.addEventListener('hashchange', function(){
 
 // Atualização automática: a cada intervalo, e também quando a pessoa volta para a aba
 function conferir(){
-  renderStatus();
+  renderStatus(); renderRecado();
   if (document.hidden) return;
   if (Date.now() - (ultimaBusca[state.mes] || 0) >= INTERVALO) carregarMes(state.mes, true);
 }
@@ -1102,7 +1123,7 @@ carregarMes(state.mes, false).then(carregarHistorico);
 // Os links das planilhas ficam cifrados (AES-GCM) aqui dentro e só abrem com a senha.
 (function () {
   'use strict';
-  var CIFRA = {"voltas":600000,"sal":"QLCtoEhencrDdd518PcFWg==","iv":"MDGhGEu5xxeuWp7y","dados":"8TLOeGV/URzV60FOCzGsYsshDJmrK5E4LXiS7Vlhgr+K6fNOYTAFBwbSO/GJnPWqa9ZGVAlrF9K5RKcDJfkmUYU1wHGuCPtn+wDVbrD9CgQLDa/1OpqLN8Zd8pcqAjwKRggieZLtqt0lkuuS9C/nDyz3Aanij/pR4isbkU3nMtc9iRx2STdjRht9XzWZkls0HwDeH/Y7OLyNA9MAIfzqItlpPdCtMPuY1oEuLXlW6uZBIahHU0mQv72m2XvMbgWEOvUwGithZAiqS19dJbpUGgSFjLfOxf0N7qTrm1XJKnsXbtB+s47fxOZnVHuTSRLtfXyfGRZ8ImFWuG2rraphkhxrSAULR0fDSoH7i2sFF5AEh4tIZzDuXWcrFU1mscIqIDhUyyYX0M2XGVwESGu3RNbWnHuYjPCCVq0y85A9Dx8OFiUP2Ccgut210fATvyye+xE0+NJKZ4cd81NZlfPVB9zYZeq/eA5h5KPC7A4ol637+3pTAVXVJpwsq98dnf5mwdSR8WdZ0kX+s36Bph560nZfNYTJ/MjhZ1VWKLTReKetncuXRCCJkJrmg2hx9yOF3v1Uf9rrHM2CyZ7Kp4tvPkmj2qCek/C53QGMwbtgKAmfMwo37gj0hZwB171iTZcS6/sN8+7xqxsKwUEt/ZoThIZ9FVrDE8/r9kisgGYkQ0mursymFlv0j5P6+OcrJmfUYYeGSFx7jCEPvR0mj1STwgFhVhEZc/90FrhkpetG9PT1mtEytOtnezbFY/KJ/zeXffRPHasonwGKg2IHdF8aMLa8Vfh3ZXCHHPmjetXWwIWxPtaMa80twlru0fb7YkzUA2olS20ThXBLKBJfuJEFfwdrEzK5P8y5/Kov8HUzBSNHXkKOlPNf5kH96O/zKMtyqozh3gIO2HKPwjmydeuyPk3Ts7Ob892vTNOJVJIHPq0R1y1ByhLnxi65edFivxJPMQYMQhnKEimX4TmvpT2BNM1RjislzUis6eEOIiGa84Pblo/I08smgQmm63MHoi5ftXo2P9Pu5xPccJ63yqqkARCW6vat7QO3mImP0Dz+nrxfExTkVZPVJVF/j7PRmwCIpZSf0D1OtBlpCm1I0TO/E62XLzwOdCWDsVgKWxQv8KIxVD8KCSB5VH6zHz2Dsbs9TgVbO1jVgiG/Q7MMvAB5/7THrqc+O/72883bxnRHWv63VIRITPqa2ywTRDsUhCG/ItRP/aCXc4n/zUY2OeJPTR21cmBQTHDuXPZLwTi0p9suO5OKA3uQndEg0VQZLuWhJ5cHVNNjKeCTvGdqKWOAsh1CSPBP+51+9lq7fJmWrsJ/KaC6yO8Cmlkfwe3B7gww1ICdG4M2y2vq7fssAH71cUR6tL/cu0e6qW+18GNmI3expIu6uGIXY9O1aSuqn0seW3x0BTI3xuNFfIiV+OOxcOFGdewLjdPsZl5gwVW1RuRSQfXxw8Y9Z6nn9uxpLX2hSNBW/wyZdqXm5gGohtxzMqbZE9WNZMrZP+mduj9glkEPdmP5Kqrr2bWVXKNnOF82BLLfBdkOIJVgxLFTsnGelv7wjXsEMHO8mX7TnmbZjA01+wa8xUhieBLZQR1DiJgres4Oy3+opQ2IrKx7/CvLkvYm4l91Tckdrn+cXDUH0Jx4CwmP/w3iKuNgW5GJtIBIdhKCeOhmi5jNCz9qG/DSD2T+zjNLD12wdH8d+0zFvAUNWYsVVRmCDVe5zpUL+Umm8J6ga7e21B3rnDJecmIdkBkI7hzdb0NCH6tPc5EODZ8Y840eZ2SGp+6L3boWENHVer4yR/TuFMwOfg8rphVnGD++Uvay6yH2ySC4"};
+  var CIFRA = {"voltas":600000,"sal":"NjJuIlIRpY1twYaPr86Z0w==","iv":"ZYOREYnMe0ResTrO","dados":"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"};
   var GUARDA = 'controle-fiscal-chave';
   var caixa = document.getElementById('trava'), form = document.getElementById('trava-form');
   var msg = document.getElementById('trava-msg'), campo = document.getElementById('trava-senha');
