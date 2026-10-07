@@ -260,7 +260,6 @@ th:last-child,td:last-child{padding-right:16px}
 .folha h2{color:var(--parc);font-size:20px;text-align:center}
 .folha p{white-space:pre-line;font-size:15px;line-height:1.6}
 .folha p strong{color:var(--parc);font-weight:600}
-.folha small{color:var(--muted);font-size:12px}
 .folha-btn{background:var(--parc);color:#1b1404;border-radius:8px;padding:10px;font-weight:600;margin-top:4px}
 :root[data-theme="light"] .folha-btn{color:#fff}
 .folha-btn:hover{filter:brightness(1.08)}
@@ -369,7 +368,6 @@ body.com-modal{overflow:hidden}
     <div class="folha-selo"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 19L24 6l18 13v19a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z"/><path d="M12 23V12h24v11"/><path d="M6 19l18 13 18-13"/><path d="M17 17h14M17 21.5h9"/></svg></div>
     <h2 id="recado-titulo"></h2>
     <p id="recado-texto"></p>
-    <small id="recado-ate"></small>
     <button class="folha-btn" id="recado-fechar" data-acao="fechar-recado">Fechar</button>
   </div>
 </div>
@@ -679,8 +677,6 @@ function abrirRecado(){
   if (!r) return;
   $('recado-titulo').textContent = r.titulo;
   $('recado-texto').innerHTML = esc(r.texto).replace(/\*([^*\n]+)\*/g, '<strong>$1</strong>');
-  var d = r.ate.split('-');
-  $('recado-ate').textContent = r.ate ? 'Este recado fica na carta lá em cima até ' + d[2] + '/' + d[1] + '.' : '';
   $('recado').hidden = false;
   document.body.classList.add('com-modal');
   $('recado-fechar').focus();
@@ -1188,7 +1184,7 @@ carregarMes(state.mes, false).then(carregarHistorico);
 // Os links das planilhas ficam cifrados (AES-GCM) aqui dentro e só abrem com a senha.
 (function () {
   'use strict';
-  var CIFRA = {"voltas":600000,"sal":"IoLwu76f9LZYX32j0Yq+gg==","iv":"3DmFbj1jcMIxmG/q","dados":"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"};
+  var CIFRA = {"voltas":600000,"sal":"nxj3zR0h0kMd4SVx4BUFCA==","iv":"l+YPB7lFXKqztBSy","dados":"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"};
   var GUARDA = 'controle-fiscal-chave';
   var caixa = document.getElementById('trava'), form = document.getElementById('trava-form');
   var msg = document.getElementById('trava-msg'), campo = document.getElementById('trava-senha');
