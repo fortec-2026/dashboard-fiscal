@@ -272,6 +272,10 @@ th:last-child,td:last-child{padding-right:16px}
 .th-rot{display:grid;line-height:1.15}
 .th-rot small{font-family:var(--sans);font-weight:500;font-size:10px;color:var(--pend);white-space:nowrap}
 .th-check.on .th-rot{color:var(--pend)}
+.iss-cel{display:inline-flex;gap:8px;align-items:baseline}
+.iss-par{display:inline-flex;gap:2px;align-items:baseline}
+.iss-par small{font-size:10px;color:var(--muted);text-transform:uppercase}
+.iss-dia{display:block;font-size:10px;color:var(--muted);margin-top:1px}
 .chip.chip-prazo{border-color:var(--pend);color:var(--pend)}
 @media (max-width:700px){
   .prazo{grid-template-columns:auto minmax(0,1fr) auto;padding:10px 12px}
@@ -496,12 +500,22 @@ var PARSERS = {
         return { rot:rot, estado:'pend', txt:(up === 'FALSE' || up === 'FALSO') ? '' : v };
       });
       var envio = cel(l, idx['ENVIO']).toUpperCase();
+      var issPartes = ['ISS TOM','ISS PREST'].map(function(rot){
+        var v = cel(l, idx[rot]), up = v.toUpperCase();
+        if (v === '' || IGN.indexOf(up) >= 0) return { rot:rot, estado:'na', txt:v };
+        if (SIM.indexOf(up) >= 0) return { rot:rot, estado:'ok', txt:'' };
+        return { rot:rot, estado:'pend', txt:(up === 'FALSE' || up === 'FALSO') ? '' : v };
+      });
+      var issDia = parseInt(cel(l, idx['ISS']), 10);
+      var issApl = issPartes.filter(function(c){ return c.estado !== 'na'; });
+      var iss = { tom:issPartes[0], prest:issPartes[1], dia:(issDia >= 1 && issDia <= 31) ? issDia : null,
+                  estado: !issApl.length ? 'na' : issApl.some(function(c){ return c.estado === 'pend'; }) ? 'pend' : 'ok' };
       out.push(fechar({
         regime:'lr', cod:cod, nome:nome,
         resp:(cel(l, idx['RESP']) || 'SEM RESP').toUpperCase(),
         cidade:cel(l, idx['CIDADE']), uf:cel(l, idx['UF']),
         atividade:cel(l, idx['ATIVIDADE']), matFil:cel(l, idx['MAT/FIL']),
-        campos:campos, enviado:campos[2].estado === 'ok', envioDispensado:IGN.indexOf(envio) >= 0
+        campos:campos, enviado:campos[2].estado === 'ok', envioDispensado:IGN.indexOf(envio) >= 0, iss:iss
       }));
     }
     return { titulo: cel(linhas[0], 0), registros: out };
@@ -686,85 +700,121 @@ function renderCabecalho(){
   $('subtitulo').textContent = sub;
 }
 
-// ── Prazos da EFD ICMS ────────────────────────────────────────────────────
-// A EFD ICMS de um mês vence no mês seguinte, no dia de cada estado (CONFIG.prazosEfdIcms).
+// ── Prazos das obrigações (lembretes) ─────────────────────────────────────
+// EFD ICMS: dia fixo por estado no mês seguinte ao da apuração (CONFIG.prazosEfdIcms).
+// EFD Contribuições: N-ésimo dia útil do segundo mês seguinte ao da apuração (CONFIG.prazoEfdContribuicoes).
 // O site avisa nos últimos dias úteis antes do prazo e no dia, contando as empresas de Lucro Real
-// e Presumido daquele estado com a coluna de EFD ICMS ainda pendente.
+// e Presumido com a coluna daquela obrigação ainda pendente na aba do mês de apuração.
 function isoDia(d){ return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
 function diaUtil(d){
   var s = d.getDay();
   return s !== 0 && s !== 6 && (CONFIG.feriados || []).indexOf(isoDia(d)) < 0;
 }
 function hojeZero(){ var h = new Date(); return new Date(h.getFullYear(), h.getMonth(), h.getDate()); }
-function competenciaDosPrazos(){ var i = hojeZero().getMonth() - 1; return MESES[i < 0 ? 11 : i]; }
+function mesAntes(n){ var i = hojeZero().getMonth() - n; return MESES[(i % 12 + 12) % 12]; }
+function ddmm(d){ return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2); }
 var DIA_SEMANA = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
 
 function prazosAtivos(){
-  var P = CONFIG.prazosEfdIcms, aviso = CONFIG.avisarComDiasUteis || 3;
-  if (!P) return [];
-  var hoje = hojeZero(), out = [];
-  Object.keys(P).forEach(function(dia){
-    var venc = new Date(hoje.getFullYear(), hoje.getMonth(), +dia);
-    var ultimo = new Date(venc);
-    while (!diaUtil(ultimo)) ultimo.setDate(ultimo.getDate() - 1);   // fim de semana ou feriado: vale o dia útil anterior
+  var aviso = CONFIG.avisarComDiasUteis || 3, hoje = hojeZero(), out = [];
+  function avalia(item, ultimo){
     if (hoje > ultimo) return;
     var n = 0, d = new Date(hoje);
     while (d < ultimo) { d.setDate(d.getDate() + 1); if (diaUtil(d)) n++; }
     if (n > aviso) return;
-    out.push({ dia:+dia, ufs:P[dia].map(function(u){ return String(u).toUpperCase(); }), venc:venc, ultimo:ultimo, n:n });
+    item.ultimo = ultimo; item.n = n; out.push(item);
+  }
+  var P = CONFIG.prazosEfdIcms;
+  if (P) Object.keys(P).forEach(function(dia){
+    var venc = new Date(hoje.getFullYear(), hoje.getMonth(), +dia), ultimo = new Date(venc);
+    while (!diaUtil(ultimo)) ultimo.setDate(ultimo.getDate() - 1);   // fim de semana ou feriado: vale o dia útil anterior
+    avalia({ id:'icms' + dia, campo:0, nome:'EFD ICMS', comp:mesAntes(1), venc:venc,
+             ufs:P[dia].map(function(u){ return String(u).toUpperCase(); }), ordem:+dia }, ultimo);
   });
-  return out.sort(function(a, b){ return a.n - b.n || a.dia - b.dia; });
+  var C = CONFIG.prazoEfdContribuicoes;
+  if (C && C.diaUtil) {
+    var d = new Date(hoje.getFullYear(), hoje.getMonth(), 1), k = diaUtil(d) ? 1 : 0;
+    while (k < C.diaUtil) { d.setDate(d.getDate() + 1); if (diaUtil(d)) k++; }
+    avalia({ id:'contrib', campo:1, nome:'EFD Contribuições', comp:mesAntes(2), venc:new Date(d), ufs:null,
+             regra:C.diaUtil + 'º dia útil', ordem:d.getDate() }, new Date(d));
+  }
+  if (CONFIG.lembreteIss) {
+    var fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+    // dias que caem no mesmo dia útil (ex.: sexta, sábado e domingo) viram um aviso só
+    var grupos = {};
+    for (var dia = 1; dia <= fim; dia++) {
+      var vi = new Date(hoje.getFullYear(), hoje.getMonth(), dia), ui = new Date(vi);
+      while (!diaUtil(ui)) ui.setDate(ui.getDate() - 1);
+      var chave = isoDia(ui);
+      (grupos[chave] || (grupos[chave] = { ultimo:ui, dias:[], vencs:[] })).dias.push(dia);
+      grupos[chave].vencs.push(vi);
+    }
+    Object.keys(grupos).forEach(function(k){
+      var gr = grupos[k], ds = gr.dias;
+      avalia({ id:'iss' + ds[0], tipo:'iss', nome:'ISS', art:'do', comp:mesAntes(1), venc:gr.vencs[gr.vencs.length - 1],
+               ufs:null, dias:ds, ordem:ds[0], rotDia: ds.length > 1 ? ds[0] + ' a ' + ds[ds.length - 1] : String(ds[0]) }, gr.ultimo);
+    });
+  }
+  return out.sort(function(a, b){ return a.n - b.n || a.ordem - b.ordem; });
 }
 
 var REG_EFD = ['lr','lp'];
 function regimesDoPrazo(){ return REG_EFD.filter(function(g){ return regimesDaVisao().indexOf(g) >= 0; }); }
-function pendentesDoPrazo(p, comp){
+function pendenteNoPrazo(r, p){
+  if (p.tipo === 'iss') return r.regime === 'lr' && r.iss && p.dias.indexOf(r.iss.dia) >= 0 && r.iss.estado === 'pend';
+  return r.regime !== 'sn' && (!p.ufs || p.ufs.indexOf(String(r.uf).trim().toUpperCase()) >= 0) &&
+    r.campos[p.campo] && r.campos[p.campo].estado === 'pend';
+}
+function pendentesDoPrazo(p){
   var rs = [];
-  regimesDoPrazo().forEach(function(g){ var e = cache[g + ':' + comp]; if (e && e.registros) rs = rs.concat(e.registros); });
-  return porSelecao(rs).filter(function(r){
-    return p.ufs.indexOf(String(r.uf).trim().toUpperCase()) >= 0 && r.campos[0] && r.campos[0].estado === 'pend';
-  });
+  regimesDoPrazo().forEach(function(g){ var e = cache[g + ':' + p.comp]; if (e && e.registros) rs = rs.concat(e.registros); });
+  return porSelecao(rs).filter(function(r){ return pendenteNoPrazo(r, p); });
 }
 
 var buscandoPrazo = {};
 function renderPrazos(){
-  var el = $('prazos'), lista = prazosAtivos(), comp = competenciaDosPrazos();
-  var gs = regimesDoPrazo();
+  var el = $('prazos'), lista = prazosAtivos(), gs = regimesDoPrazo();
   if (!lista.length || !gs.length) { el.innerHTML = ''; return; }
   // os dados do mês de apuração podem não estar abertos na tela: busca em segundo plano
-  var faltando = gs.filter(function(g){ var e = cache[g + ':' + comp]; return urlAba(g, comp) && !(e && e.registros); });
-  faltando.forEach(function(g){
-    var k = g + ':' + comp;
-    if (buscandoPrazo[k] || (cache[k] && cache[k].carregando)) return;
-    buscandoPrazo[k] = true;
-    baixar(g, comp).then(function(){ buscandoPrazo[k] = false; renderPrazos(); });
+  var faltando = 0;
+  lista.forEach(function(p){
+    gs.forEach(function(g){
+      var k = g + ':' + p.comp, e = cache[k];
+      if (!urlAba(g, p.comp) || (e && e.registros)) return;
+      faltando++;
+      if (buscandoPrazo[k] || (e && e.carregando)) return;
+      buscandoPrazo[k] = true;
+      baixar(g, p.comp).then(function(){ buscandoPrazo[k] = false; renderPrazos(); });
+    });
   });
-  if (faltando.length) { el.innerHTML = ''; return; }
+  if (faltando) { el.innerHTML = ''; return; }
 
   el.innerHTML = lista.map(function(p){
-    var pend = pendentesDoPrazo(p, comp);
+    var pend = pendentesDoPrazo(p);
     if (!pend.length) return '';
-    var dd = ('0' + p.venc.getDate()).slice(-2) + '/' + ('0' + (p.venc.getMonth() + 1)).slice(-2);
     var mudou = p.ultimo.getTime() !== p.venc.getTime();
     var cont = p.n === 0 ? '<b>Hoje</b><small>último dia</small>' : '<b>' + p.n + '</b><small>' + (p.n === 1 ? 'dia útil' : 'dias úteis') + '</small>';
-    var titulo = p.n === 0 ? 'Hoje é o último dia da EFD ICMS' : p.n === 1 ? 'EFD ICMS vence amanhã' : 'EFD ICMS vence em ' + p.n + ' dias úteis';
-    var quando = 'Prazo de ' + MES_NOME[comp] + ': dia ' + dd + ' (' + DIA_SEMANA[p.venc.getDay()] + ')' +
-      (mudou ? ', que não é dia útil. Entregue até ' + DIA_SEMANA[p.ultimo.getDay()] + ', ' + ('0' + p.ultimo.getDate()).slice(-2) + '/' + ('0' + (p.ultimo.getMonth() + 1)).slice(-2) + '.' : '.');
-    var on = state.prazo && state.prazo.dia === p.dia;
+    var titulo = p.n === 0 ? 'Hoje é o último dia ' + (p.art || 'da') + ' ' + p.nome : p.nome + (p.n === 1 ? ' vence amanhã' : ' vence em ' + p.n + ' dias úteis');
+    var quem = p.ufs ? p.ufs.join(', ') : 'Lucro Real e Presumido, todos os estados';
+    if (p.tipo === 'iss') {
+      var cids = [];
+      pend.forEach(function(r){ var c = nomePessoa(r.cidade || ''); if (c && cids.indexOf(c) < 0) cids.push(c); });
+      quem = 'Lucro Real, empresas com vencimento ' + (p.dias.length > 1 ? 'nos dias ' : 'no dia ') + p.rotDia + (cids.length ? ': ' + cids.slice(0, 4).join(', ') + (cids.length > 4 ? ' e mais ' + (cids.length - 4) + (cids.length - 4 === 1 ? ' cidade' : ' cidades') : '') : '');
+    }
+    var quando = p.dias && p.dias.length > 1 ? 'Apuração de ' + MES_NOME[p.comp] + ': vencimentos dos dias ' + p.rotDia + '. Entregue até ' + DIA_SEMANA[p.ultimo.getDay()] + ', ' + ddmm(p.ultimo) + '.' : 'Apuração de ' + MES_NOME[p.comp] + ': vence ' + (p.regra ? 'no ' + p.regra + ', ' : 'dia ') + ddmm(p.venc) + ' (' + DIA_SEMANA[p.venc.getDay()] + ')' +
+      (mudou ? ', que não é dia útil. Entregue até ' + DIA_SEMANA[p.ultimo.getDay()] + ', ' + ddmm(p.ultimo) + '.' : '.');
+    var on = state.prazo && state.prazo.id === p.id;
     return '<div class="prazo d' + Math.min(p.n, 3) + (on ? ' foco' : '') + '" role="status">' +
       '<div class="prazo-cont">' + cont + '</div>' +
-      '<div class="prazo-txt"><strong>' + titulo + '</strong><span>' + esc(p.ufs.join(', ')) + '</span><em>' + esc(quando) + '</em></div>' +
+      '<div class="prazo-txt"><strong>' + esc(titulo) + '</strong><span>' + esc(quem) + '</span><em>' + esc(quando) + '</em></div>' +
       '<div class="prazo-n"><b>' + pend.length + '</b><small>' + (pend.length === 1 ? 'empresa pendente' : 'empresas pendentes') + '</small></div>' +
-      '<button class="prazo-btn" data-prazo="' + p.dia + '" aria-pressed="' + !!on + '">' + (on ? 'Mostrar todas' : 'Ver empresas') + '</button></div>';
+      '<button class="prazo-btn" data-prazo="' + p.id + '" aria-pressed="' + !!on + '">' + (on ? 'Mostrar todas' : 'Ver empresas') + '</button></div>';
   }).join('');
 }
 
 function filtroPrazo(rs){
   var p = state.prazo;
-  if (!p) return rs;
-  return rs.filter(function(r){
-    return p.ufs.indexOf(String(r.uf).trim().toUpperCase()) >= 0 && r.campos[0] && r.campos[0].estado === 'pend' && r.regime !== 'sn';
-  });
+  return p ? rs.filter(function(r){ return pendenteNoPrazo(r, p); }) : rs;
 }
 
 // ── Recado do escritório ──────────────────────────────────────────────────
@@ -1038,9 +1088,23 @@ function carregarHistorico(){
 var OBRIG = {
   icmsPend:    { campo:0, dica:'a EFD ICMS ainda não entregue', imp:'Sem EFD ICMS entregue' },
   contribPend: { campo:1, dica:'a EFD Contribuições ainda não entregue', imp:'Sem EFD Contribuições entregue' },
-  envioPend:   { campo:2, dica:'o envio à contabilidade ainda pendente', imp:'Envio à contabilidade pendente' }
+  envioPend:   { campo:2, dica:'o envio à contabilidade ainda pendente', imp:'Envio à contabilidade pendente' },
+  issPend:     { iss:true, dica:'o ISS (tomado ou prestado) ainda pendente', imp:'ISS pendente' }
 };
-function faltaObrig(r, k){ return r.regime !== 'sn' && r.campos[OBRIG[k].campo] && r.campos[OBRIG[k].campo].estado === 'pend'; }
+function faltaObrig(r, k){
+  if (OBRIG[k].iss) return r.regime === 'lr' && r.iss && r.iss.estado === 'pend';
+  return r.regime !== 'sn' && r.campos[OBRIG[k].campo] && r.campos[OBRIG[k].campo].estado === 'pend';
+}
+function celIss(r){
+  var s = r.iss;
+  if (!s) return '<td class="c"></td>';
+  function marca(rot, c){
+    var m = c.estado === 'ok' ? '<span class="f-ok">✓</span>' : c.estado === 'pend' ? '<span class="f-pend">—</span>' : '<span class="f-txt">n/a</span>';
+    return '<span class="iss-par" title="ISS ' + rot + ': ' + (c.estado === 'ok' ? 'feito' : c.estado === 'pend' ? 'pendente' : 'não se aplica') + '"><small>' + rot.charAt(0) + '</small>' + m + '</span>';
+  }
+  return '<td class="c"><span class="iss-cel">' + marca('tomado', s.tom) + marca('prestado', s.prest) + '</span>' +
+    (s.dia && s.estado !== 'na' ? '<small class="iss-dia">dia ' + s.dia + '</small>' : '') + '</td>';
+}
 function celObrig(i){ return function(r){ return '<td class="c">' + (r.regime === 'sn' ? '<span class="t-sub">–</span>' : celCampo(r.campos[i])) + '</td>'; }; }
 function thObrig(rotulo, k){
   var n = porSelecao(registrosDaVisao()).filter(function(r){ return faltaObrig(r, k); }).length, on = !!state.flags[k];
@@ -1055,7 +1119,8 @@ var FLAGS = {
   sn: [], todos: []
 };
 function renderFlags(){
-  $('flags').innerHTML = (state.prazo ? '<button class="chip chip-prazo" data-prazo="' + state.prazo.dia + '" aria-pressed="true" title="Tirar este filtro">EFD ICMS pendente, dia ' + state.prazo.dia + ' ✕</button>' : '') +
+  $('flags').innerHTML = (state.prazo ? '<button class="chip chip-prazo" data-prazo="' + state.prazo.id + '" aria-pressed="true" title="Tirar este filtro">' +
+    esc(state.prazo.nome) + ' pendente' + (state.prazo.tipo === 'iss' ? ', vence dia ' + state.prazo.rotDia : state.prazo.ufs ? ', vence dia ' + state.prazo.ordem : '') + ' ✕</button>' : '') +
     FLAGS[state.view].map(function(f){
     return '<button class="chip" data-flag="' + f[0] + '" aria-pressed="' + !!state.flags[f[0]] + '">' + f[1] + '</button>';
   }).join('');
@@ -1070,6 +1135,7 @@ function filtrados(){
   if (f.icmsPend)   rs = rs.filter(function(r){ return faltaObrig(r, 'icmsPend'); });
   if (f.contribPend) rs = rs.filter(function(r){ return faltaObrig(r, 'contribPend'); });
   if (f.envioPend)  rs = rs.filter(function(r){ return faltaObrig(r, 'envioPend'); });
+  if (f.issPend)    rs = rs.filter(function(r){ return faltaObrig(r, 'issPend'); });
   if (state.status === 'concluido') rs = rs.filter(function(r){ return r.status === 'concluido'; });
   else if (state.status === 'pendente') rs = rs.filter(function(r){ return r.status === 'parcial' || r.status === 'pendente'; });
   else if (state.status === 'na') rs = rs.filter(function(r){ return r.status === 'na'; });
@@ -1240,7 +1306,7 @@ document.addEventListener('click', function(ev){
 
   if (d.view != null) {
     if (d.view === state.view) return;
-    var mantem = { icmsPend:state.flags.icmsPend, contribPend:state.flags.contribPend, envioPend:(d.view === 'lr' || d.view === 'lp') && state.flags.envioPend };
+    var mantem = { icmsPend:state.flags.icmsPend, contribPend:state.flags.contribPend, envioPend:(d.view === 'lr' || d.view === 'lp') && state.flags.envioPend, issPend:d.view === 'lr' && state.flags.issPend };
     state.view = d.view; state.flags = d.view === 'sn' ? {} : mantem;
     if (state.view === 'todos') state.sel = null;
     if (state.view === 'sn') state.prazo = null;
@@ -1259,16 +1325,14 @@ document.addEventListener('click', function(ev){
     render();
   }
   else if (d.prazo != null) {
-    var dia = +d.prazo;
-    if (state.prazo && state.prazo.dia === dia) state.prazo = null;
+    if (state.prazo && state.prazo.id === d.prazo) state.prazo = null;
     else {
-      var p = prazosAtivos().filter(function(x){ return x.dia === dia; })[0];
+      var p = prazosAtivos().filter(function(x){ return x.id === d.prazo; })[0];
       if (!p) return;
-      state.prazo = { dia:dia, ufs:p.ufs };
+      state.prazo = p;
       state.status = 'todos'; state.flags = {};
       if (state.view === 'sn') state.view = 'todos';
-      var comp = competenciaDosPrazos();
-      if (state.mes !== comp) { state.mes = comp; if (!ultimaBusca[comp]) carregarMes(comp, false); }
+      if (state.mes !== p.comp) { state.mes = p.comp; if (!ultimaBusca[p.comp]) carregarMes(p.comp, false); }
     }
     render();
     if (state.prazo) { var alvo = document.querySelector('.toolbar'); if (alvo) alvo.scrollIntoView({ behavior:'smooth', block:'start' }); }
@@ -1331,10 +1395,10 @@ window.addEventListener('hashchange', function(){
 // Atualização automática: a cada intervalo, e também quando a pessoa volta para a aba
 function conferir(){
   renderStatus(); renderRecado();
-  var comp = competenciaDosPrazos();
-  if (!document.hidden && comp !== state.mes && prazosAtivos().length) {
-    REG_EFD.forEach(function(g){ var e = cache[g + ':' + comp]; if (e && e.em && Date.now() - e.em >= INTERVALO && !e.carregando) baixar(g, comp).then(renderPrazos); });
-  }
+  if (!document.hidden) prazosAtivos().forEach(function(p){
+    if (p.comp === state.mes) return;
+    REG_EFD.forEach(function(g){ var e = cache[g + ':' + p.comp]; if (e && e.em && Date.now() - e.em >= INTERVALO && !e.carregando) baixar(g, p.comp).then(renderPrazos); });
+  });
   renderPrazos();
   if (document.hidden) return;
   if (Date.now() - (ultimaBusca[state.mes] || 0) >= INTERVALO) carregarMes(state.mes, true);
@@ -1358,7 +1422,7 @@ carregarMes(state.mes, false).then(carregarHistorico);
 // Os links das planilhas ficam cifrados (AES-GCM) aqui dentro e só abrem com a senha.
 (function () {
   'use strict';
-  var CIFRA = {"voltas":600000,"sal":"t0pJjgkhso4yMSEbg18FsA==","iv":"GBsHh9N2TtWlhknT","dados":"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"};
+  var CIFRA = {"voltas":600000,"sal":"3xYEXrthvKtwZOVndKRQbg==","iv":"GyDlrQuwmKF0eF3G","dados":"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"};
   var GUARDA = 'controle-fiscal-chave';
   var caixa = document.getElementById('trava'), form = document.getElementById('trava-form');
   var msg = document.getElementById('trava-msg'), campo = document.getElementById('trava-senha');
