@@ -1035,19 +1035,23 @@ function carregarHistorico(){
 
 // Caixinhas no cabeçalho das colunas EFD: marcada = só empresas com aquela obrigação ainda não entregue.
 // campos[0] = EFD ICMS, campos[1] = EFD Contribuições (Lucro Real e Presumido)
-var OBRIG = { icmsPend:{ campo:0, nome:'EFD ICMS' }, contribPend:{ campo:1, nome:'EFD Contribuições' } };
+var OBRIG = {
+  icmsPend:    { campo:0, dica:'a EFD ICMS ainda não entregue', imp:'Sem EFD ICMS entregue' },
+  contribPend: { campo:1, dica:'a EFD Contribuições ainda não entregue', imp:'Sem EFD Contribuições entregue' },
+  envioPend:   { campo:2, dica:'o envio à contabilidade ainda pendente', imp:'Envio à contabilidade pendente' }
+};
 function faltaObrig(r, k){ return r.regime !== 'sn' && r.campos[OBRIG[k].campo] && r.campos[OBRIG[k].campo].estado === 'pend'; }
 function celObrig(i){ return function(r){ return '<td class="c">' + (r.regime === 'sn' ? '<span class="t-sub">–</span>' : celCampo(r.campos[i])) + '</td>'; }; }
 function thObrig(rotulo, k){
   var n = porSelecao(registrosDaVisao()).filter(function(r){ return faltaObrig(r, k); }).length, on = !!state.flags[k];
-  return '<label class="th-check' + (on ? ' on' : '') + '" title="Marque para ver só as empresas com a ' + OBRIG[k].nome + ' ainda não entregue">' +
+  return '<label class="th-check' + (on ? ' on' : '') + '" title="Marque para ver só as empresas com ' + OBRIG[k].dica + '">' +
     '<input type="checkbox" data-obrig="' + k + '"' + (on ? ' checked' : '') + '><span class="caixa" aria-hidden="true"></span>' +
     '<span class="th-rot">' + rotulo + '<small>' + (on ? 'só pendentes' : n + ' pendentes') + '</small></span></label>';
 }
 
 var FLAGS = {
-  lr: [['enviado','Enviadas à contabilidade'],['naoEnviado','Não enviadas'],['matriz','Matriz'],['filial','Filial']],
-  lp: [['enviado','Envio concluído'],['naoEnviado','Envio pendente']],
+  lr: [['enviado','Enviadas à contabilidade'],['matriz','Matriz'],['filial','Filial']],
+  lp: [['enviado','Envio concluído']],
   sn: [], todos: []
 };
 function renderFlags(){
@@ -1065,6 +1069,7 @@ function filtrados(){
   if (f.filial)     rs = rs.filter(function(r){ return r.matFil.toUpperCase().indexOf('FILIAL') >= 0; });
   if (f.icmsPend)   rs = rs.filter(function(r){ return faltaObrig(r, 'icmsPend'); });
   if (f.contribPend) rs = rs.filter(function(r){ return faltaObrig(r, 'contribPend'); });
+  if (f.envioPend)  rs = rs.filter(function(r){ return faltaObrig(r, 'envioPend'); });
   if (state.status === 'concluido') rs = rs.filter(function(r){ return r.status === 'concluido'; });
   else if (state.status === 'pendente') rs = rs.filter(function(r){ return r.status === 'parcial' || r.status === 'pendente'; });
   else if (state.status === 'na') rs = rs.filter(function(r){ return r.status === 'na'; });
@@ -1113,7 +1118,7 @@ var COLUNAS = {
     ['Responsável', function(r){ return '<td class="t-sub">' + esc(nomePessoa(r.resp)) + '</td>'; }],
     ['EFD ICMS', celObrig(0), 'c', 'icmsPend'],
     ['EFD P/C', celObrig(1), 'c', 'contribPend'],
-    ['Envio', function(r){ return '<td class="c">' + celCampo(r.campos[2]) + '</td>'; }, 'c'],
+    ['Envio', celObrig(2), 'c', 'envioPend'],
     ['Progresso', function(r){ return '<td>' + celProg(r) + '</td>'; }],
     ['Situação', function(r){ return '<td>' + celStatus(r) + '</td>'; }]
   ],
@@ -1123,7 +1128,7 @@ var COLUNAS = {
     ['Responsável', function(r){ return '<td class="t-sub">' + esc(nomePessoa(r.resp)) + '</td>'; }],
     ['EFD ICMS/IPI', celObrig(0), 'c', 'icmsPend'],
     ['EFD PIS/COFINS', celObrig(1), 'c', 'contribPend'],
-    ['Envio', function(r){ return '<td class="c">' + celCampo(r.campos[2]) + '</td>'; }, 'c'],
+    ['Envio', celObrig(2), 'c', 'envioPend'],
     ['Progresso', function(r){ return '<td>' + celProg(r) + '</td>'; }],
     ['Situação', function(r){ return '<td>' + celStatus(r) + '</td>'; }]
   ],
@@ -1163,7 +1168,7 @@ function renderTabela(){
   var rs = filtrados();
   $('conta').textContent = plural(rs.length, 'empresa', 'empresas');
   $('p-titulo').textContent = VISOES[state.view] + ', ' + MES_NOME[state.mes] + ' de ' + CONFIG.ano;
-  var obr = Object.keys(OBRIG).filter(function(k){ return state.flags[k]; }).map(function(k){ return 'Sem ' + OBRIG[k].nome + ' entregue. '; }).join('');
+  var obr = Object.keys(OBRIG).filter(function(k){ return state.flags[k]; }).map(function(k){ return OBRIG[k].imp + '. '; }).join('');
   $('p-sub').textContent = obr + rotuloSel() + '. ' + plural(rs.length, 'empresa', 'empresas') + '. Gerado em ' + new Date().toLocaleString('pt-BR') + '.';
 
   if (!rs.length) {
@@ -1235,7 +1240,7 @@ document.addEventListener('click', function(ev){
 
   if (d.view != null) {
     if (d.view === state.view) return;
-    var mantem = { icmsPend:state.flags.icmsPend, contribPend:state.flags.contribPend };
+    var mantem = { icmsPend:state.flags.icmsPend, contribPend:state.flags.contribPend, envioPend:(d.view === 'lr' || d.view === 'lp') && state.flags.envioPend };
     state.view = d.view; state.flags = d.view === 'sn' ? {} : mantem;
     if (state.view === 'todos') state.sel = null;
     if (state.view === 'sn') state.prazo = null;
@@ -1283,7 +1288,7 @@ document.addEventListener('click', function(ev){
   }
   else if (d.flag != null) {
     var liga = !state.flags[d.flag];
-    if (d.flag === 'enviado' || d.flag === 'naoEnviado') { state.flags.enviado = state.flags.naoEnviado = false; }
+    if (d.flag === 'enviado') { state.flags.envioPend = false; }
     if (d.flag === 'matriz' || d.flag === 'filial') { state.flags.matriz = state.flags.filial = false; }
     state.flags[d.flag] = liga;
     renderFlags(); renderTabela();
@@ -1312,6 +1317,7 @@ document.addEventListener('change', function(ev){
   var k = ev.target && ev.target.getAttribute && ev.target.getAttribute('data-obrig');
   if (!k) return;
   state.flags[k] = ev.target.checked;
+  if (k === 'envioPend' && ev.target.checked) { state.flags.enviado = false; renderFlags(); }
   renderTabela();
   var cx = document.querySelector('input[data-obrig="' + k + '"]');
   if (cx) cx.focus();
@@ -1352,7 +1358,7 @@ carregarMes(state.mes, false).then(carregarHistorico);
 // Os links das planilhas ficam cifrados (AES-GCM) aqui dentro e só abrem com a senha.
 (function () {
   'use strict';
-  var CIFRA = {"voltas":600000,"sal":"eL0wc9ioABtROAKIgO9nJQ==","iv":"cjp/m26mZz6YSkKw","dados":"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"};
+  var CIFRA = {"voltas":600000,"sal":"t0pJjgkhso4yMSEbg18FsA==","iv":"GBsHh9N2TtWlhknT","dados":"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"};
   var GUARDA = 'controle-fiscal-chave';
   var caixa = document.getElementById('trava'), form = document.getElementById('trava-form');
   var msg = document.getElementById('trava-msg'), campo = document.getElementById('trava-senha');
