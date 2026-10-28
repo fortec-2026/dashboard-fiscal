@@ -254,6 +254,8 @@ th:last-child,td:last-child{padding-right:16px}
 .prazo-cont small{font-size:11px;font-weight:600;margin-top:3px;white-space:nowrap}
 .prazo-txt strong{display:block;font-family:var(--disp);font-weight:600;font-size:15px;color:var(--pc)}
 .prazo-txt span{color:var(--ink);font-size:13px}
+.prazo-aviso .prazo-txt span{white-space:pre-line}
+.prazo-txt span b{color:var(--pc);font-weight:600}
 .prazo-txt em{font-style:normal;color:var(--muted);font-size:12px;display:block;margin-top:1px}
 .prazo-n{text-align:right;line-height:1.1}
 .prazo-n b{font-family:var(--disp);font-weight:700;font-size:22px;font-variant-numeric:tabular-nums;display:block}
@@ -717,13 +719,22 @@ var DIA_SEMANA = ['domingo','segunda','terça','quarta','quinta','sexta','sábad
 
 function prazosAtivos(){
   var aviso = CONFIG.avisarComDiasUteis || 3, hoje = hojeZero(), out = [];
-  function avalia(item, ultimo){
+  function avalia(item, ultimo, limite){
     if (hoje > ultimo) return;
     var n = 0, d = new Date(hoje);
     while (d < ultimo) { d.setDate(d.getDate() + 1); if (diaUtil(d)) n++; }
-    if (n > aviso) return;
+    if (n > (limite || aviso)) return;
     item.ultimo = ultimo; item.n = n; out.push(item);
   }
+  // Avisos de prazo com data fixa (ex.: Reinf): só texto, sem contar empresas
+  (CONFIG.avisosDePrazo || []).forEach(function(a, i){
+    var p = String(a.prazo || '').split('-');
+    if (p.length !== 3 || !a.texto) return;
+    var venc = new Date(+p[0], +p[1] - 1, +p[2]), ultimo = new Date(venc);
+    while (!diaUtil(ultimo)) ultimo.setDate(ultimo.getDate() - 1);
+    avalia({ id:'aviso' + i, tipo:'aviso', nome:a.titulo || 'Aviso', titulo:a.titulo || 'Aviso', texto:String(a.texto).trim(),
+             venc:venc, ufs:null, ordem:venc.getDate() }, ultimo, a.avisarComDiasUteis);
+  });
   var P = CONFIG.prazosEfdIcms;
   if (P) Object.keys(P).forEach(function(dia){
     var venc = new Date(hoje.getFullYear(), hoje.getMonth(), +dia), ultimo = new Date(venc);
@@ -774,10 +785,13 @@ function pendentesDoPrazo(p){
 var buscandoPrazo = {};
 function renderPrazos(){
   var el = $('prazos'), lista = prazosAtivos(), gs = regimesDoPrazo();
-  if (!lista.length || !gs.length) { el.innerHTML = ''; return; }
+  var avisos = lista.filter(function(p){ return p.tipo === 'aviso'; });   // avisos de texto aparecem em todas as telas
+  if (!gs.length) lista = avisos;
+  if (!lista.length) { el.innerHTML = ''; return; }
   // os dados do mês de apuração podem não estar abertos na tela: busca em segundo plano
   var faltando = 0;
   lista.forEach(function(p){
+    if (p.tipo === 'aviso') return;
     gs.forEach(function(g){
       var k = g + ':' + p.comp, e = cache[k];
       if (!urlAba(g, p.comp) || (e && e.registros)) return;
@@ -787,9 +801,18 @@ function renderPrazos(){
       baixar(g, p.comp).then(function(){ buscandoPrazo[k] = false; renderPrazos(); });
     });
   });
-  if (faltando) { el.innerHTML = ''; return; }
+  if (faltando) lista = avisos;
 
   el.innerHTML = lista.map(function(p){
+    if (p.tipo === 'aviso') {
+      var contA = p.n === 0 ? '<b>Hoje</b><small>último dia</small>' : '<b>' + p.n + '</b><small>' + (p.n === 1 ? 'dia útil' : 'dias úteis') + '</small>';
+      var quandoA = 'Prazo: ' + DIA_SEMANA[p.venc.getDay()] + ', ' + ddmm(p.venc) +
+        (p.ultimo.getTime() !== p.venc.getTime() ? ', que não é dia útil. Entregue até ' + DIA_SEMANA[p.ultimo.getDay()] + ', ' + ddmm(p.ultimo) + '.' : '.');
+      return '<div class="prazo prazo-aviso d' + Math.min(p.n, 3) + '" role="status">' +
+        '<div class="prazo-cont">' + contA + '</div>' +
+        '<div class="prazo-txt"><strong>' + esc(p.titulo) + '</strong><span>' + esc(p.texto).replace(/\*([^*\n]+)\*/g, '<b>$1</b>') + '</span><em>' + esc(quandoA) + '</em></div>' +
+        '<div></div><div></div></div>';
+    }
     var pend = pendentesDoPrazo(p);
     if (!pend.length) return '';
     var mudou = p.ultimo.getTime() !== p.venc.getTime();
@@ -1422,7 +1445,7 @@ carregarMes(state.mes, false).then(carregarHistorico);
 // Os links das planilhas ficam cifrados (AES-GCM) aqui dentro e só abrem com a senha.
 (function () {
   'use strict';
-  var CIFRA = {"voltas":600000,"sal":"rT/9DwikaLK5FmET29R5sw==","iv":"qMKLLTJ4FYFy+FA8","dados":"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"};
+  var CIFRA = {"voltas":600000,"sal":"ttxBhBO/CfYfazH1eNflKA==","iv":"2Aq/MIOesQAtiE5c","dados":"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"};
   var GUARDA = 'controle-fiscal-chave';
   var caixa = document.getElementById('trava'), form = document.getElementById('trava-form');
   var msg = document.getElementById('trava-msg'), campo = document.getElementById('trava-senha');
