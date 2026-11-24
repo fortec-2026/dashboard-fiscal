@@ -606,7 +606,14 @@ function baixar(regime, mes){
   var relogio = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 25000);
   var mudou = false;
   return fetch(url, { cache:'no-store', signal: ctrl ? ctrl.signal : undefined })
-    .then(function(r){ if (!r.ok) throw new Error('resposta ' + r.status); return r.text(); })
+    .then(function(r){
+      if (!r.ok) throw new Error('resposta ' + r.status);
+      // Se a aba pedida não está publicada (ou foi apagada), o Google devolve outra aba da planilha.
+      // O endereço final mostra qual aba veio; se não for a pedida, não usa os dados.
+      var veio = /[?&]gid=(\d+)/.exec(r.url || ''), pediu = CONFIG.regimes[regime].abas[mes];
+      if (veio && String(veio[1]) !== String(pediu)) throw new Error('a aba deste mês não está publicada na web, e o Google devolveu outra aba no lugar');
+      return r.text();
+    })
     .then(function(txt){
       if (/^\s*<(!doctype|html)/i.test(txt)) throw new Error('a planilha não está publicada como CSV');
       mudou = ent.txt !== txt || !!ent.erro;
@@ -622,7 +629,7 @@ function baixar(regime, mes){
         : (e && e.name === 'TypeError') ? 'sem conexão com o Google Planilhas'
         : ((e && e.message) || 'falha de conexão');
     })
-    .then(function(){ clearTimeout(relogio); ent.carregando = false; return mudou; });
+    .then(function(){ clearTimeout(relogio); ent.carregando = false; avisarEntradas(); return mudou; });
 }
 
 function carregarMes(mes, silencioso){
@@ -1217,6 +1224,14 @@ function celEntrada(r){
   var e = entradaDe(r);
   return '<td class="t-sub">' + (!e ? '<span class="carregando" title="Buscando os meses anteriores">…</span>' : e.nova ? '<span class="ent-nova">' + esc(e.txt) + '</span>' : esc(e.txt)) + '</td>';
 }
+// quando a última aba necessária chega (por qualquer busca), redesenha a coluna Entrada uma vez
+var entradasAvisadas = '';
+function avisarEntradas(){
+  var k = state.mes + '|' + versaoDados;
+  if (entradasAvisadas === k || !entradasProntas()) return;
+  entradasAvisadas = k;
+  renderFlags(); renderTabela();
+}
 // busca em segundo plano as abas de janeiro até o mês exibido, para descobrir a entrada
 function carregarEntradas(){
   var fila = abasEntrada().filter(function(a){
@@ -1563,7 +1578,7 @@ carregarMes(state.mes, false).then(carregarHistorico);
 // Os links das planilhas ficam cifrados (AES-GCM) aqui dentro e só abrem com a senha.
 (function () {
   'use strict';
-  var CIFRA = {"voltas":600000,"sal":"PQIZjjOIhxFm/Anaqh7dew==","iv":"dNtsoZfA0VJEi586","dados":"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"};
+  var CIFRA = {"voltas":600000,"sal":"yprSPwY2RXErwE+2exwL3Q==","iv":"M8d8DY916OioXLWa","dados":"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"};
   var GUARDA = 'controle-fiscal-chave';
   var caixa = document.getElementById('trava'), form = document.getElementById('trava-form');
   var msg = document.getElementById('trava-msg'), campo = document.getElementById('trava-senha');
